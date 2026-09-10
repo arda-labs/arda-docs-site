@@ -1,0 +1,45 @@
+name: Verify Docs Site
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout arda-docs-site
+        uses: actions/checkout@v4
+        with:
+          path: arda-docs-site
+
+      - name: Checkout arda-be (catalog source of truth)
+        uses: actions/checkout@v4
+        with:
+          repository: arda-labs/arda-be
+          path: arda-be
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        working-directory: arda-docs-site
+        run: bun install --frozen-lockfile
+
+      - name: Build docs site & emit catalog contracts
+        working-directory: arda-docs-site
+        env:
+          ARDA_BE_PATH: ${{ github.workspace }}/arda-be
+        run: bun run build
+
+      - name: Verify contract invariants
+        working-directory: arda-docs-site
+        run: bun run test
+
+      - name: Typecheck
+        working-directory: arda-docs-site
+        run: bun run types:check

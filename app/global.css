@@ -1,0 +1,160 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Ubuntu, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+@layer base {
+  :root {
+    /* Stripe Design Tokens - Light Theme Default */
+    --background: #ffffff;
+    --foreground: #0a2540;
+    --card: #ffffff;
+    --card-foreground: #0a2540;
+    --popover: #ffffff;
+    --popover-foreground: #0a2540;
+
+    --primary: #635bff;
+    --primary-foreground: #ffffff;
+
+    --secondary: #f6f8fa;
+    --secondary-foreground: #30313d;
+    --muted: #f6f8fa;
+    --muted-foreground: #687385;
+    --accent: #f4f0ff;
+    --accent-foreground: #635bff;
+
+    --destructive: #df1b41;
+    --destructive-foreground: #ffffff;
+
+    --border: #e3e8ee;
+    --input: #e3e8ee;
+    --ring: #635bff;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not(.light) {
+      /* Stripe Midnight Navy - System Dark */
+      --background: #0a101d;
+      --foreground: #f6f8fa;
+      --card: #0e1526;
+      --card-foreground: #f6f8fa;
+      --popover: #0e1526;
+      --popover-foreground: #f6f8fa;
+
+      --primary: #7a73ff;
+      --primary-foreground: #ffffff;
+
+      --secondary: #162032;
+      --secondary-foreground: #e3e8ee;
+      --muted: #131b2c;
+      --muted-foreground: #9ca6b5;
+      --accent: #1c1d3b;
+      --accent-foreground: #928cff;
+
+      --destructive: #fa526a;
+      --destructive-foreground: #ffffff;
+
+      --border: #212c3f;
+      --input: #212c3f;
+      --ring: #7a73ff;
+    }
+  }
+
+  .dark {
+    /* Explicit dark class override */
+    --background: #0a101d;
+    --foreground: #f6f8fa;
+    --card: #0e1526;
+    --card-foreground: #f6f8fa;
+    --popover: #0e1526;
+    --popover-foreground: #f6f8fa;
+
+    --primary: #7a73ff;
+    --primary-foreground: #ffffff;
+
+    --secondary: #162032;
+    --secondary-foreground: #e3e8ee;
+    --muted: #131b2c;
+    --muted-foreground: #9ca6b5;
+    --accent: #1c1d3b;
+    --accent-foreground: #928cff;
+
+    --destructive: #fa526a;
+    --destructive-foreground: #ffffff;
+
+    --border: #212c3f;
+    --input: #212c3f;
+    --ring: #7a73ff;
+  }
+}
+
+html {
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+  letter-spacing: -0.011em;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(140, 150, 170, 0.25);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 150, 170, 0.45);
+}
+
+/* Shiki pre-rendered syntax highlighting styling */
+.shiki {
+  background-color: transparent !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  padding: 0.875rem 1rem;
+  margin: 0;
+  overflow-x: auto;
+}
+
+.shiki code {
+  font-family: inherit;
+}
