@@ -1,305 +1,350 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import {
-  FileCode2,
-  ArrowLeft,
-  ShieldCheck,
-  RefreshCw,
-  Layers,
   AlertTriangle,
-  Lock,
   CheckCircle2,
-  Copy,
-  Check,
+  FileCode2,
+  GitBranch,
+  Layers,
+  Lock,
+  RefreshCw,
+  ShieldCheck,
 } from 'lucide-react';
 import { usePortalI18n } from '@/components/provider';
+import {
+  Callout,
+  CodeBlock,
+  DataTable,
+  DocFooterNav,
+  DocHeader,
+  DocPage,
+  DocSection,
+  StatCard,
+  type DocTone,
+} from '@/components/doc-page';
+import {
+  LIST_QUERY_PARAMS,
+  PLATFORM_FACTS,
+  POLICY_RISK_TIERS,
+  RETRY_POLICIES,
+  pick,
+} from '@/lib/platform';
+import portalStats from '@/content/portal-stats.json';
+
+interface CheckRow {
+  name: string;
+  purpose: { en: string; vi: string };
+  tone: DocTone;
+}
+
+const CI_CHECKS: CheckRow[] = [
+  { name: 'check-openapi.mjs', tone: 'primary', purpose: { en: 'OpenAPI 3.1 contracts stay in sync with the HTTP surfaces.', vi: 'Hợp đồng OpenAPI 3.1 đồng bộ với bề mặt HTTP.' } },
+  { name: 'check-problem-catalog.mjs', tone: 'primary', purpose: { en: 'Every problem code arda-be can emit has a catalog page.', vi: 'Mọi mã lỗi arda-be có thể phát ra đều có trang catalog.' } },
+  { name: 'check-migrations.mjs', tone: 'info', purpose: { en: 'Migration naming pattern, goose markers, and no destructive DDL.', vi: 'Đúng pattern tên migration, marker goose, không DDL phá hủy.' } },
+  { name: 'check-bpmn.mjs', tone: 'info', purpose: { en: 'BPMN structure: dangling refs, default-flow conditions, review variables.', vi: 'Cấu trúc BPMN: tham chiếu treo, điều kiện default flow, biến review.' } },
+  { name: 'check-layering.mjs', tone: 'warning', purpose: { en: 'Handlers may not import internal/repository.', vi: 'Handler không được import internal/repository.' } },
+  { name: 'check-proto.mjs', tone: 'warning', purpose: { en: 'Generated protobuf matches the proto/ sources.', vi: 'Protobuf sinh ra khớp nguồn proto/.' } },
+  { name: 'check-events.mjs', tone: 'success', purpose: { en: 'Event registry matches arda-events subject/code constants.', vi: 'Registry sự kiện khớp hằng subject/code trong arda-events.' } },
+  { name: 'check-event-runtime.mjs', tone: 'success', purpose: { en: 'Outbox/consumer runtime wiring for notification delivery.', vi: 'Wiring runtime outbox/consumer cho phát thông báo.' } },
+  { name: 'check-interactions.mjs', tone: 'neutral', purpose: { en: 'Interaction contract: protocol, timeout, retry, identity, context.', vi: 'Hợp đồng tương tác: protocol, timeout, retry, định danh, ngữ cảnh.' } },
+  { name: 'check-observability-contract.mjs', tone: 'neutral', purpose: { en: 'HTTP metrics and tracing contract is implemented.', vi: 'Hợp đồng metrics/tracing HTTP được hiện thực.' } },
+  { name: 'check-security-invariants.mjs', tone: 'danger', purpose: { en: 'Tenant, policy, and session invariants in gateway/iam.', vi: 'Bất biến tenant, policy, phiên ở gateway/iam.' } },
+  { name: 'check-encrypted-columns.mjs', tone: 'danger', purpose: { en: 'Encrypted-column registry matches real implementations.', vi: 'Registry cột mã hóa khớp hiện thực.' } },
+  { name: 'check-secrets.mjs', tone: 'danger', purpose: { en: 'No committed credentials or known weak secrets.', vi: 'Không commit credential/mật khẩu yếu đã biết.' } },
+  { name: 'check-ai-catalog.mjs', tone: 'info', purpose: { en: 'AI internal surface docs match gateway permissions.', vi: 'Tài liệu bề mặt AI nội bộ khớp quyền trên gateway.' } },
+  { name: 'check-rls-pilot.mjs', tone: 'warning', purpose: { en: 'RLS pilot artifact stays scratch-only, production adoption gated.', vi: 'Artifact RLS pilot chỉ ở mức thử nghiệm, chưa áp dụng production.' } },
+];
+
+const CONVENTIONS: Array<{ title: { en: string; vi: string }; body: { en: string; vi: string } }> = [
+  {
+    title: { en: 'Migrations', vi: 'Migration' },
+    body: {
+      en: 'File name must match ^\\d{14}_[a-z0-9_-]+\\.sql, contain goose Up/Down markers, and must not use DROP … CASCADE.',
+      vi: 'Tên file phải khớp ^\\d{14}_[a-z0-9_-]+\\.sql, có marker goose Up/Down và không dùng DROP … CASCADE.',
+    },
+  },
+  {
+    title: { en: 'Layering', vi: 'Phân tầng' },
+    body: {
+      en: 'handler → service → repository. Cross-service access only via HTTP/gRPC/NATS; no shared domain imports.',
+      vi: 'handler → service → repository. Truy cập xuyên service chỉ qua HTTP/gRPC/NATS; không import domain chéo.',
+    },
+  },
+  {
+    title: { en: 'Time', vi: 'Thời gian' },
+    body: {
+      en: 'Instants persist as UTC timestamptz; business dates resolve via ardatime with the user/tenant timezone; ranges are half-open [from, to).',
+      vi: 'Mốc thời gian lưu UTC timestamptz; ngày nghiệp vụ quy đổi bằng ardatime theo múi giờ user/tenant; khoảng là nửa mở [from, to).',
+    },
+  },
+  {
+    title: { en: 'Events', vi: 'Sự kiện' },
+    body: {
+      en: 'Publish through the transactional outbox, bump schema_version on payload evolution, and make every consumer idempotent.',
+      vi: 'Phát qua outbox giao dịch, tăng schema_version khi payload đổi, và mọi consumer phải idempotent.',
+    },
+  },
+  {
+    title: { en: 'Secrets & encryption', vi: 'Bí mật & mã hóa' },
+    body: {
+      en: 'Secrets come from Kubernetes secrets/env; columns holding secrets must be registered in the encrypted-column contract.',
+      vi: 'Bí mật lấy từ secret/env Kubernetes; cột chứa bí mật phải nằm trong contract cột mã hóa.',
+    },
+  },
+  {
+    title: { en: 'Contracts', vi: 'Hợp đồng' },
+    body: {
+      en: 'Response shape changes update OpenAPI and problem pages in the same change; proto edits require regenerating arda-proto.',
+      vi: 'Đổi shape response phải cập nhật OpenAPI và trang problem trong cùng thay đổi; sửa proto phải regenerate arda-proto.',
+    },
+  },
+];
 
 export default function GuidelinesPage() {
   const { locale } = usePortalI18n();
   const isVi = locale === 'vi';
-  const [copiedSnippet, setCopiedSnippet] = React.useState(false);
-
-  const copyEnvelope = () => {
-    const text = `{
-  "type": "https://docs.arda.io.vn/problems/auth.error.unauthorized/",
-  "title": "Unauthorized Request",
-  "status": 401,
-  "code": "auth.error.unauthorized",
-  "message": "Bearer token is missing or has expired",
-  "instance": "/v1/finance/accounts/ACC-1001",
-  "timestamp": "2026-09-10T08:00:00Z",
-  "request_id": "req_88f912a7d4c",
-  "trace_id": "trc_4b9a110ef"
-}`;
-    navigator.clipboard.writeText(text);
-    setCopiedSnippet(true);
-    setTimeout(() => setCopiedSnippet(false), 2000);
-  };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-10">
-      {/* Header */}
-      <div className="border-b border-border pb-6 space-y-2">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-1"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          {isVi ? 'Quay lại Tổng quan' : 'Back to Overview'}
-        </Link>
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-primary/10 text-primary border border-primary/20">
-            RFC 7807 • REST CONTRACT
-          </span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          {isVi ? 'Quy chuẩn Kỹ thuật & Chuẩn hóa Lỗi' : 'Engineering & Error Handling Guidelines'}
-        </h1>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {isVi
-            ? 'Bộ quy chuẩn bắt buộc áp dụng xuyên suốt 11 microservices backend, Gateway Ingress và ứng dụng frontend trong hệ sinh thái Arda Core Banking.'
-            : 'Mandatory engineering contracts, error schemas, and retry semantics across all 11 microservices and frontend clients.'}
-        </p>
-      </div>
+    <DocPage>
+      <DocHeader
+        badge="RFC 7807 • REST CONTRACT"
+        title={isVi ? 'Quy chuẩn Kỹ thuật & Chuẩn hóa Lỗi' : 'Engineering & Error Handling Guidelines'}
+        description={
+          isVi
+            ? `Bộ quy chuẩn bắt buộc cho ${PLATFORM_FACTS.services} microservices, gateway BFF và client: bao đóng lỗi, phân cấp mã, chính sách thử lại, phân tầng rủi ro và các invariant được CI kiểm chứng.`
+            : `Mandatory contracts for ${PLATFORM_FACTS.services} microservices, the BFF gateway, and clients: error envelope, code hierarchy, retry semantics, risk tiers, and CI-enforced invariants.`
+        }
+      />
 
-      {/* Principle 1: RFC 7807 Standard Envelope */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-            1
-          </div>
-          <h2 className="text-lg font-bold text-foreground">
-            {isVi ? 'Quy chuẩn Cấu trúc Lỗi RFC 7807' : 'RFC 7807 Standard Error Envelope'}
-          </h2>
-        </div>
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard value={portalStats.totalProblems} label={isVi ? 'Mã lỗi chuẩn hóa' : 'Standardized problem codes'} hint={`${portalStats.clientErrors} × 4xx · ${portalStats.serverErrors} × 5xx`} />
+        <StatCard value={RETRY_POLICIES.length} label={isVi ? 'Chính sách thử lại' : 'Retry policies'} hint="gắn theo từng mã lỗi" tone="warning" />
+        <StatCard value={POLICY_RISK_TIERS.length} label={isVi ? 'Tầng rủi ro Gateway' : 'Gateway risk tiers'} hint="public → low → medium → high" tone="info" />
+        <StatCard value={PLATFORM_FACTS.checkScripts} label={isVi ? 'Script invariant trong CI' : 'CI invariant scripts'} hint="arda-be/scripts/check-*.mjs" tone="success" />
+      </section>
 
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {isVi
-            ? 'Mọi phản hồi lỗi HTTP 4xx và 5xx từ API Gateway hoặc microservice đều BẮT BUỘC trả về Content-Type `application/problem+json` và tuân thủ chặt chẽ định dạng bao đóng 10 trường dữ liệu:'
-            : 'All HTTP 4xx and 5xx responses must return Content-Type `application/problem+json` adhering strictly to the RFC 7807 envelope schema:'}
-        </p>
+      {/* 1. Envelope */}
+      <DocSection
+        index="1"
+        icon={FileCode2}
+        title={isVi ? 'Bao đóng Lỗi Chuẩn (Contract)' : 'Canonical Error Envelope'}
+        description={
+          isVi
+            ? 'Bề mặt đã migrate trả Content-Type application/problem+json với các trường phẳng sau. Lưu ý: instance/timestamp KHÔNG thuộc envelope hiện tại.'
+            : 'Migrated surfaces return Content-Type application/problem+json with the flat fields below. Note: instance/timestamp are NOT part of the current envelope.'
+        }
+      >
+        <CodeBlock
+          title="application/problem+json"
+          code={`HTTP/1.1 401 Unauthorized
+Content-Type: application/problem+json
 
-        {/* Code Box */}
-        <div className="rounded-xl bg-[#0c111c] border border-[#1e293b] text-[#e3e8ee] overflow-hidden shadow-sm">
-          <div className="flex items-center justify-between px-3.5 py-2 bg-[#0e1726] border-b border-[#1e293b] text-xs font-mono">
-            <span className="text-[#87909f]">application/problem+json</span>
-            <button
-              type="button"
-              onClick={copyEnvelope}
-              className="inline-flex items-center gap-1 text-[#87909f] hover:text-white transition-colors cursor-pointer"
-            >
-              {copiedSnippet ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedSnippet ? (isVi ? 'Đã chép' : 'Copied') : (isVi ? 'Chép JSON' : 'Copy JSON')}</span>
-            </button>
-          </div>
-          <pre className="p-4 text-xs font-mono leading-relaxed overflow-x-auto text-[#cbd5e1]">
-{`{
+{
   "type": "https://docs.arda.io.vn/problems/auth.error.unauthorized/",
-  "title": "Unauthorized Request",
+  "title": "Unauthorized",
   "status": 401,
   "code": "auth.error.unauthorized",
   "message": "Bearer token is missing or has expired",
-  "instance": "/v1/finance/accounts/ACC-1001",
-  "timestamp": "2026-09-10T08:00:00Z",
+  "errors": [
+    { "code": "validation.required", "message": "email is required", "field": "email" }
+  ],
   "request_id": "req_88f912a7d4c",
   "trace_id": "trc_4b9a110ef"
 }`}
-          </pre>
-        </div>
-
-        {/* Schema requirements checklist */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
-          <div className="p-3 rounded-lg border border-border bg-card space-y-1">
-            <div className="font-semibold text-foreground flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-              <span>{isVi ? 'type (Canonical URL)' : 'type (Canonical URL)'}</span>
-            </div>
-            <p className="text-muted-foreground">
-              {isVi
-                ? 'Bắt buộc là URL tuyệt đối có trailing slash, trỏ thẳng về trang tài liệu phân giải của mã lỗi.'
-                : 'Must be an absolute URL with trailing slash pointing directly to the problem docs page.'}
-            </p>
-          </div>
-
-          <div className="p-3 rounded-lg border border-border bg-card space-y-1">
-            <div className="font-semibold text-foreground flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-              <span>{isVi ? 'request_id & trace_id' : 'request_id & trace_id'}</span>
-            </div>
-            <p className="text-muted-foreground">
-              {isVi
-                ? 'Được Gateway gán xuyên suốt chuỗi microservice nhằm đối soát và truy vết phân tán trong OpenTelemetry.'
-                : 'Assigned by Auth Gateway and propagated across services for OpenTelemetry distributed tracing.'}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Principle 2: Code Naming Conventions */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-            2
-          </div>
-          <h2 className="text-lg font-bold text-foreground">
-            {isVi ? 'Quy tắc Đặt Mã Lỗi (Code Naming Hierarchy)' : 'Problem Code Hierarchy & Naming'}
-          </h2>
-        </div>
-
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {isVi
-            ? 'Mọi mã lỗi được phân cấp theo cú pháp dấu chấm cố định: `<domain>.<subdomain>.<specific_error>`. Toàn bộ ký tự viết thường, dùng dấu gạch dưới `_` cho từ ghép.'
-            : 'All problem codes follow a dot-delimited hierarchy: `<domain>.<subdomain>.<specific_error>`, written strictly in snake_case lowercase.'}
-        </p>
-
-        <div className="p-4 rounded-xl border border-border bg-card space-y-3 text-xs">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="space-y-1">
-              <div className="font-mono font-bold text-primary">auth.*</div>
-              <p className="text-muted-foreground">
-                {isVi ? 'Xác thực, phân quyền, phiên làm việc IAM, CSRF.' : 'Authentication, RBAC permissions, IAM sessions, CSRF tokens.'}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">finance.*</div>
-              <p className="text-muted-foreground">
-                {isVi ? 'Tài khoản, số dư sổ cái, khóa sổ EOD, bút toán đối soát.' : 'Ledger accounts, balance invariants, EOD cutoffs, reconciliations.'}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <div className="font-mono font-bold text-blue-600 dark:text-blue-400">ai.* / workflow.*</div>
-              <p className="text-muted-foreground">
-                {isVi ? 'Hạn ngạch mô hình LLM, chạy quy trình Zeebe Sagas, timeout.' : 'LLM quota thresholds, Zeebe process instances, task timeouts.'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Principle 3: Retry Policy Semantics */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-            3
-          </div>
-          <h2 className="text-lg font-bold text-foreground">
-            {isVi ? 'Quy định về Cơ chế Thử lại (Retry Policies)' : 'Client Retry Policies & Semantics'}
-          </h2>
-        </div>
-
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {isVi
-            ? 'Mỗi mã lỗi trong catalog đều gắn liền với một chính sách thử lại bắt buộc. Frontend và SDK client KHÔNG ĐƯỢC tự ý retry nếu vi phạm quy định sau:'
-            : 'Every problem definition has an explicit retry policy. Clients and SDKs must strictly honor these semantics:'}
-        </p>
-
-        <div className="space-y-2.5 text-xs">
-          <div className="p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-1">
-            <div className="font-bold text-amber-700 dark:text-amber-400 flex items-center gap-2">
-              <span className="font-mono">NON_RETRYABLE</span>
-              <span>•</span>
-              <span>{isVi ? 'Không Thử lại' : 'Do Not Retry'}</span>
-            </div>
-            <p className="text-muted-foreground">
-              {isVi
-                ? 'Lỗi do tham số sai (400), vi phạm nghiệp vụ hoặc thiếu quyền. Thử lại với cùng dữ liệu sẽ luôn luôn thất bại.'
-                : 'Validation or business logic failure. Retrying with identical payload is guaranteed to fail.'}
-            </p>
-          </div>
-
-          <div className="p-3.5 rounded-xl border border-red-500/20 bg-red-500/5 space-y-1">
-            <div className="font-bold text-red-700 dark:text-red-400 flex items-center gap-2">
-              <span className="font-mono">REQUIRES_REAUTH</span>
-              <span>•</span>
-              <span>{isVi ? 'Yêu cầu Tái xác thực' : 'Requires Re-Authentication'}</span>
-            </div>
-            <p className="text-muted-foreground">
-              {isVi
-                ? 'Phiên đăng nhập hoặc token đã mất hiệu lực (401). Phải refresh token hoặc điều hướng đăng nhập trước khi gọi lại API.'
-                : 'Session expired or invalidated. Client must refresh tokens or re-authenticate before resending.'}
-            </p>
-          </div>
-
-          <div className="p-3.5 rounded-xl border border-primary/20 bg-primary/5 space-y-1">
-            <div className="font-bold text-primary flex items-center gap-2">
-              <span className="font-mono">EXPONENTIAL_BACKOFF</span>
-              <span>•</span>
-              <span>{isVi ? 'Giãn cách Hàm mũ' : 'Exponential Backoff'}</span>
-            </div>
-            <p className="text-muted-foreground">
-              {isVi
-                ? 'Quá tải hoặc chạm trần Rate Limit (429). Client phải chờ khoảng thời gian tăng dần và tuân thủ header `Retry-After`.'
-                : 'Rate limit or resource throttle. Wait for exponentially increasing delays and observe Retry-After headers.'}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Principle 4: Gateway Authorization Policy */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-            4
-          </div>
-          <h2 className="text-lg font-bold text-foreground">
-            {isVi ? 'Phân tầng Rủi ro Cổng Gateway (Risk Tiers)' : 'Gateway Risk Tiers & Authorization'}
-          </h2>
-        </div>
-
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {isVi
-            ? 'Theo nguyên tắc kiến trúc Arda, các microservice nội bộ không tự kiểm tra phân quyền. Toàn bộ chính sách truy cập được khai báo tập trung tại `apps/auth-gateway/configs/policy.yaml` theo 4 cấp độ:'
-            : 'Internal services delegate all authorization checks to Auth Gateway. All routes are declaratively protected under 4 tiers in policy.yaml:'}
-        </p>
-
+        />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          <div className="p-3 rounded-lg border border-border bg-card space-y-1">
-            <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">1. public</div>
-            <p className="text-muted-foreground">
-              {isVi ? 'Endpoint công khai không cần phiên đăng nhập (Health check, Login, OAuth callback).' : 'Unauthenticated public endpoints (Health, Login, OAuth callback).'}
-            </p>
-          </div>
-
-          <div className="p-3 rounded-lg border border-border bg-card space-y-1">
-            <div className="font-mono font-bold text-blue-600 dark:text-blue-400">2. read_only</div>
-            <p className="text-muted-foreground">
-              {isVi ? 'Yêu cầu phiên hợp lệ, chỉ đọc dữ liệu, không làm thay đổi trạng thái sổ cái.' : 'Requires authenticated session, read-only queries, no state changes.'}
-            </p>
-          </div>
-
-          <div className="p-3 rounded-lg border border-border bg-card space-y-1">
-            <div className="font-mono font-bold text-amber-600 dark:text-amber-400">3. standard_write</div>
-            <p className="text-muted-foreground">
-              {isVi ? 'Thao tác ghi dữ liệu thông thường, yêu cầu kiểm tra RBAC permission tương ứng.' : 'Standard state-mutating requests guarded by verified RBAC permissions.'}
-            </p>
-          </div>
-
-          <div className="p-3 rounded-lg border border-border bg-card space-y-1">
-            <div className="font-mono font-bold text-red-600 dark:text-red-400">4. high_risk</div>
-            <p className="text-muted-foreground">
-              {isVi ? 'Giao dịch chuyển tiền lớn, phê duyệt tín dụng, chạy EOD — bắt buộc kiểm tra Step-Up 2FA hoặc Dual Control.' : 'High-value transfers, loan approvals, EOD cutoff — requires 2FA step-up or dual-control authorization.'}
-            </p>
-          </div>
+          <Callout tone="success" icon={CheckCircle2} title="type · status · code">
+            {isVi
+              ? 'type luôn là URL tuyệt đối https://docs.arda.io.vn/problems/<code>/; code là định danh máy đọc, ổn định theo thời gian.'
+              : 'type is always the absolute URL https://docs.arda.io.vn/problems/<code>/; code is the stable machine identifier.'}
+          </Callout>
+          <Callout tone="success" icon={CheckCircle2} title="errors[] · request_id · trace_id">
+            {isVi
+              ? 'errors[] mô tả lỗi từng trường; request_id do biên request sinh và echo qua header X-Request-Id; trace_id theo W3C traceparent.'
+              : 'errors[] lists per-field failures; request_id is generated at the request boundary and echoed via X-Request-Id; trace_id follows W3C traceparent.'}
+          </Callout>
         </div>
-      </section>
+        <Callout tone="neutral" icon={Layers} title={isVi ? 'Hai shape lỗi đang tồn tại song song' : 'Two error shapes coexist today'}>
+          {isVi
+            ? 'Ngoài problem+json (bề mặt đã migrate), một số surface cũ trả bao đóng arda-errors { error: { code, message, fields, request_id } } với application/json. Client nên đọc code/message và ưu tiên problem+json khi có.'
+            : 'Besides problem+json (migrated surfaces), some legacy surfaces return the arda-errors envelope { error: { code, message, fields, request_id } } as application/json. Clients should read code/message and prefer problem+json when present.'}
+        </Callout>
+      </DocSection>
 
-      {/* Link to catalog */}
-      <div className="pt-6 border-t border-border flex items-center justify-between">
-        <Link
-          href="/problems/auth.error.unauthorized/"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-xs hover:bg-primary/90 transition-colors shadow-2xs"
-        >
-          <span>{isVi ? 'Tra cứu 152 Mã Lỗi trong Catalog' : 'Explore 152 Problem Catalog Codes'}</span>
-        </Link>
-        <Link
-          href="/architecture"
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {isVi ? 'Xem Kiến trúc Hệ thống →' : 'View System Architecture →'}
-        </Link>
-      </div>
-    </div>
+      {/* 2. Code hierarchy */}
+      <DocSection
+        index="2"
+        icon={GitBranch}
+        title={isVi ? 'Phân cấp Mã lỗi' : 'Problem Code Hierarchy'}
+        description={
+          isVi
+            ? 'Cú pháp <domain>.<subdomain>.<specific_error> viết thường, snake_case; catalog được chia 3 cụm và 9 namespace dưới đây.'
+            : 'Syntax is <domain>.<subdomain>.<specific_error>, lowercase snake_case; the catalog spans 3 clusters and the 9 namespaces below.'
+        }
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {portalStats.clusters.map((cluster) => (
+            <div key={cluster.id} className="p-4 rounded-xl border border-border bg-card space-y-1">
+              <div className="text-2xl font-bold text-primary">{cluster.totalCodes}</div>
+              <div className="text-xs font-semibold text-foreground">
+                {isVi ? cluster.title_vi : cluster.title}
+              </div>
+              <div className="text-[11px] text-muted-foreground font-mono">{cluster.id}</div>
+            </div>
+          ))}
+        </div>
+        <DataTable
+          columns={[isVi ? 'Namespace' : 'Namespace', isVi ? 'Tên' : 'Name', isVi ? 'Số mã' : 'Codes']}
+          minWidth={520}
+          rows={portalStats.categories.map((category) => [
+            <code key="id" className="font-mono text-[11px] text-primary">
+              {category.id}.*
+            </code>,
+            isVi ? category.title_vi : category.title,
+            category.count,
+          ])}
+        />
+      </DocSection>
+
+      {/* 3. Retry */}
+      <DocSection
+        index={3}
+        icon={RefreshCw}
+        title={isVi ? 'Chính sách Thử lại (5 loại)' : 'Retry Policies (5 kinds)'}
+        description={
+          isVi
+            ? 'SDK/client không được tự ý retry ngoài chính sách gắn với mã lỗi; số lượng mã theo từng chính sách được đếm khi build.'
+            : 'Clients must not retry outside the policy attached to a problem code; per-policy counts are computed at build time.'
+        }
+      >
+        <DataTable
+          columns={['Policy', isVi ? 'Số mã' : 'Codes', isVi ? 'Ngữ nghĩa' : 'Semantics']}
+          minWidth={680}
+          rows={RETRY_POLICIES.map((policy) => {
+            const count = portalStats.retryPolicies.find((p) => p.policy === policy.policy)?.count ?? 0;
+            return [
+              <code key="policy" className="font-mono text-[11px] text-primary">
+                {policy.policy}
+              </code>,
+              count,
+              pick(policy.meaning, locale),
+            ];
+          })}
+        />
+        <Callout tone="warning" icon={AlertTriangle} title={isVi ? 'Luôn log request_id' : 'Always log request_id'}>
+          {isVi
+            ? 'Khi retry hoặc báo sự cố, đính kèm request_id (header X-Request-Id) để đối soát xuyên service và tra log nhanh.'
+            : 'When retrying or escalating, attach request_id (X-Request-Id) so operators can correlate across services and jump to logs.'}
+        </Callout>
+      </DocSection>
+
+      {/* 4. Risk tiers */}
+      <DocSection
+        index={4}
+        icon={ShieldCheck}
+        title={isVi ? 'Phân tầng Rủi ro Gateway' : 'Gateway Risk Tiers'}
+        description={
+          isVi
+            ? 'Microservice nội bộ không tự kiểm tra auth; toàn bộ 78 route nằm trong policy.yaml với 4 tầng rủi ro. Tầng high yêu cầu thêm recent auth (step-up).'
+            : 'Internal services do not authenticate; all 78 routes live in policy.yaml under 4 risk tiers. The high tier additionally requires recent auth (step-up).'
+        }
+      >
+        <DataTable
+          columns={[isVi ? 'Tầng' : 'Tier', isVi ? 'Số route' : 'Routes', isVi ? 'Yêu cầu' : 'Requirement']}
+          minWidth={560}
+          rows={POLICY_RISK_TIERS.map((tier) => [
+            <code key="tier" className="font-mono text-[11px] text-primary">
+              {tier.tier}
+            </code>,
+            tier.count,
+            pick(tier.behavior, locale),
+          ])}
+        />
+        <Callout tone="danger" icon={Lock} title={isVi ? 'Từ chối & recent auth' : 'Denials & recent auth'}>
+          {isVi
+            ? 'Thiếu phiên → 401 user_context_unavailable; thiếu quyền → 403 insufficient_permissions; sai đơn vị → 403 organization_forbidden; phiên cũ trên route high → 403 recent_auth_required.'
+            : 'Missing session → 401 user_context_unavailable; missing grant → 403 insufficient_permissions; org not in membership → 403 organization_forbidden; stale session on a high route → 403 recent_auth_required.'}
+        </Callout>
+      </DocSection>
+
+      {/* 5. Response contract */}
+      <DocSection
+        index={5}
+        icon={FileCode2}
+        title={isVi ? 'Hợp đồng Response & Phân trang' : 'Response & Pagination Contract'}
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <CodeBlock
+            title="success envelope"
+            code={`{
+  "result": { ... },
+  "success": true,
+  "errors": [],
+  "messages": [],
+  "meta": { "request_id": "...", "trace_id": "...", "timestamp": "..." }
+}`}
+          />
+          <DataTable
+            columns={[isVi ? 'Tham số list' : 'List parameter', isVi ? 'Giá trị' : 'Value']}
+            minWidth={320}
+            rows={LIST_QUERY_PARAMS.map((row) => [
+              <code key="p" className="font-mono text-[11px] text-primary">
+                {row.param}
+              </code>,
+              row.value,
+            ])}
+          />
+        </div>
+        <Callout tone="info" title={isVi ? 'Một envelope cho mọi kết quả' : 'One envelope for results'}>
+          {isVi
+            ? 'Endpoint đã migrate trả { result, success, errors, messages, meta }; danh sách nằm trong result dạng { items, page, per_page, total }. Không đoán shape ở runtime.'
+            : 'Migrated endpoints return { result, success, errors, messages, meta }; lists live inside result as { items, page, per_page, total }. Never guess shapes at runtime.'}
+        </Callout>
+      </DocSection>
+
+      {/* 6. CI invariants */}
+      <DocSection
+        index={6}
+        icon={Lock}
+        title={isVi ? 'Bất biến được CI Kiểm chứng' : 'CI-Enforced Invariants'}
+        description={
+          isVi
+            ? 'CI arda-be chạy 15 script check-*.mjs; thay đổi vi phạm sẽ fail trước khi merge. Bảng dưới là phạm vi từng script.'
+            : 'arda-be CI runs 15 check-*.mjs scripts; violating changes fail before merge. The table maps each script to its scope.'
+        }
+      >
+        <DataTable
+          columns={['Script', isVi ? 'Phạm vi' : 'Scope']}
+          minWidth={620}
+          rows={CI_CHECKS.map((check) => [
+            <code key="name" className="font-mono text-[11px] text-primary">
+              {check.name}
+            </code>,
+            pick(check.purpose, locale),
+          ])}
+        />
+      </DocSection>
+
+      {/* 7. Conventions */}
+      <DocSection
+        index={7}
+        icon={Layers}
+        title={isVi ? 'Quy ước Bắt buộc' : 'Required Conventions'}
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {CONVENTIONS.map((rule) => (
+            <Callout key={rule.title.en} tone="neutral" title={pick(rule.title, locale)}>
+              {pick(rule.body, locale)}
+            </Callout>
+          ))}
+        </div>
+      </DocSection>
+
+      <DocFooterNav
+        previous={{ href: '/problems/auth.error.unauthorized/', label: isVi ? 'Danh mục Lỗi RFC 7807' : 'RFC 7807 Problem Catalog' }}
+        next={{ href: '/architecture', label: isVi ? 'Xem Kiến trúc Hệ thống' : 'View System Architecture' }}
+      />
+    </DocPage>
   );
 }

@@ -28,4 +28,5 @@ next-env.d.ts
 # generated problem content (source of truth is arda-be)
 /content/docs/problems/
 /content/catalog-data.json
+/content/portal-stats.json
 .wrangler

@@ -406,6 +406,51 @@ try {
     }
   }
 
+  // Portal-wide aggregates for the static documentation pages (about,
+  // architecture, api-reference, workflows, guidelines). Kept in a small
+  // generated file so client components never bundle the full catalog.
+  const retryCounts = new Map();
+  const statusCounts = new Map();
+  for (const p of pages) {
+    retryCounts.set(p.retry_policy, (retryCounts.get(p.retry_policy) || 0) + 1);
+    statusCounts.set(p.status, (statusCounts.get(p.status) || 0) + 1);
+  }
+
+  const portalStats = {
+    totalProblems: pages.length,
+    clientErrors: pages.filter((p) => p.status >= 400 && p.status < 500).length,
+    serverErrors: pages.filter((p) => p.status >= 500).length,
+    clusters: clusterGroups.map((c) => ({
+      id: c.id,
+      title: c.title,
+      title_vi: c.title_vi,
+      totalCodes: c.totalCodes,
+    })),
+    categories: flatCategories
+      .map((c) => ({
+        id: c.id,
+        title: c.title,
+        title_vi: c.title_vi,
+        count: c.items.length,
+      }))
+      .sort((a, b) => b.count - a.count),
+    retryPolicies: [...retryCounts.entries()]
+      .map(([policy, count]) => ({ policy, count }))
+      .sort((a, b) => b.count - a.count),
+    statuses: [...statusCounts.entries()]
+      .map(([status, count]) => ({ status: Number(status), count }))
+      .sort((a, b) => a.status - b.status),
+  };
+
+  await writeFile(
+    path.join(contentDir, "portal-stats.json"),
+    JSON.stringify(portalStats, null, 2),
+    "utf8"
+  );
+  console.log(
+    `[sync-content] Written content/portal-stats.json (${pages.length} codes, ${portalStats.retryPolicies.length} retry policies).`
+  );
+
   // Write content/catalog-data.json
   await writeFile(
     path.join(contentDir, "catalog-data.json"),

@@ -59,7 +59,7 @@ export const dictionary = {
     glTitle: 'Double-Entry Accounting',
     glDesc: 'Balanced journal entries (Debit = Credit) with immutable posting runs and automated trial balance.',
     sagaTitle: 'Zeebe Distributed Sagas',
-    sagaDesc: '22 BPMN workflows orchestrating loan formation, disbursement batches, and compensating rollback.',
+    sagaDesc: '42 BPMN processes orchestrating loan formation, disbursement batches, and compensating rollback.',
     tenantTitle: 'Multi-Tenant Isolation',
     tenantDesc: 'Verified tenant scoping via FromOutgoing gRPC metadata. Strict row-level isolation in Postgres.',
     timeTitle: 'Time Normalization',
@@ -67,7 +67,7 @@ export const dictionary = {
 
     // API Gateway
     apiTitle: 'API Gateway & Protocol',
-    apiDesc: 'All client requests pass through auth-gateway on port 8082. Route policies, authentication, and rate limits are defined declaratively in configs/policy.yaml with OpenAPI 3.1 contracts.',
+    apiDesc: 'All client requests pass through auth-gateway on port 8082. Route policies and authentication are defined declaratively in configs/policy.yaml with OpenAPI 3.1 contracts.',
 
     // Workflows
     wfTitle: 'Workflows & Operations',
@@ -123,7 +123,7 @@ export const dictionary = {
     glTitle: 'Sổ cái Kế toán Kép (GL)',
     glDesc: 'Mọi bút toán bắt buộc cân bằng Nợ = Có với các lượt ghi sổ bất biến và tự động đối chiếu cân đối thử.',
     sagaTitle: 'Saga Phân tán Zeebe',
-    sagaDesc: '22 quy trình BPMN điều phối khởi tạo khoản vay, gom lô giải ngân và cơ chế bù trừ giao dịch.',
+    sagaDesc: '42 quy trình BPMN điều phối khởi tạo khoản vay, gom lô giải ngân và cơ chế bù trừ giao dịch.',
     tenantTitle: 'Cách ly Đa Người thuê',
     tenantDesc: 'Toàn bộ truy vấn gRPC mang metadata FromOutgoing. Cách ly chặt chẽ theo tenant tại Postgres.',
     timeTitle: 'Chuẩn hóa Thời gian',
@@ -131,7 +131,7 @@ export const dictionary = {
 
     // API Gateway
     apiTitle: 'Cổng API & Giao thức',
-    apiDesc: 'Mọi request từ client đi qua auth-gateway (cổng 8082). Chính sách định tuyến, xác thực và giới hạn tần suất được khai báo tập trung tại configs/policy.yaml với chuẩn OpenAPI 3.1.',
+    apiDesc: 'Mọi request từ client đi qua auth-gateway (cổng 8082). Chính sách định tuyến và xác thực được khai báo tập trung tại configs/policy.yaml với chuẩn OpenAPI 3.1.',
 
     // Workflows
     wfTitle: 'Quy trình Nghiệp vụ & Vận hành',

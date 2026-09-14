@@ -4,6 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import { usePortalI18n } from './provider';
+import { PLATFORM_FACTS } from '@/lib/platform';
+import portalStats from '@/content/portal-stats.json';
 
 export function Footer() {
   const { locale } = usePortalI18n();
@@ -37,7 +39,7 @@ export function Footer() {
 
             <div className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground pt-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span>152 Standard RFC 7807 Codes</span>
+              <span>{portalStats.totalProblems} Standard RFC 7807 Codes</span>
             </div>
           </div>
 
@@ -52,7 +54,7 @@ export function Footer() {
                   href="/problems/auth.error.unauthorized/"
                   className="hover:text-primary transition-colors"
                 >
-                  {isVi ? 'Danh mục Lỗi (Problem Catalog)' : 'Problem Catalog (152 Codes)'}
+                  {isVi ? `Danh mục Lỗi (${portalStats.totalProblems} mã)` : `Problem Catalog (${portalStats.totalProblems} Codes)`}
                 </Link>
               </li>
               <li>
@@ -97,12 +99,14 @@ export function Footer() {
             </div>
             <ul className="space-y-2 text-xs">
               <li>
-                <span className="text-foreground/90 font-medium">11 Go Microservices</span>
+                <span className="text-foreground/90 font-medium">{PLATFORM_FACTS.services} Go Microservices</span>
                 <span className="block text-[11px] text-muted-foreground">Internal gRPC &amp; mTLS</span>
               </li>
               <li>
                 <span className="text-foreground/90 font-medium">Module Federation MFE</span>
-                <span className="block text-[11px] text-muted-foreground">Bun + Vite (1 Shell + 7 Remotes)</span>
+                <span className="block text-[11px] text-muted-foreground">
+                  Bun + Vite (1 Shell + {PLATFORM_FACTS.remotes} Remotes)
+                </span>
               </li>
               <li>
                 <span className="text-foreground/90 font-medium">K3s 3-Node Self-Hosted</span>

@@ -1,138 +1,332 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import { Database, ArrowLeft, ArrowRight, Clock, ShieldCheck, GitBranch, Layers } from 'lucide-react';
+import {
+  Activity,
+  Database,
+  GitBranch,
+  Layers,
+  Network,
+  ShieldCheck,
+  Workflow,
+} from 'lucide-react';
 import { usePortalI18n } from '@/components/provider';
-import { LanguageSwitcher } from '@/components/language-switcher';
+import {
+  Callout,
+  CodeBlock,
+  DataTable,
+  DocFooterNav,
+  DocHeader,
+  DocPage,
+  DocSection,
+  StatCard,
+} from '@/components/doc-page';
+import {
+  AUTH_FACTS,
+  GATEWAY_UPSTREAMS,
+  INJECTED_HEADERS,
+  PLATFORM_FACTS,
+  pick,
+} from '@/lib/platform';
+
+const BPMN_CONTRACT = [
+  {
+    element: 'bpmn:userTask',
+    rule: {
+      en: 'Human steps use zeebe:userTask + assignmentDefinition. Never a serviceTask waiting on people.',
+      vi: 'Bước con người dùng zeebe:userTask + assignmentDefinition. Không bao giờ dùng serviceTask chờ người.',
+    },
+  },
+  {
+    element: 'bpmn:serviceTask',
+    rule: {
+      en: 'Domain side effects use job type {service}.{aggregate}.{op}.{action} with explicit retries.',
+      vi: 'Side effect nghiệp vụ dùng job type {service}.{aggregate}.{op}.{action} với retry tường minh.',
+    },
+  },
+  {
+    element: 'Error boundary',
+    rule: {
+      en: 'Business failures throw BPMN errors caught by an error boundary event — not gateway flags.',
+      vi: 'Lỗi nghiệp vụ throw BPMN error và được bắt bằng error boundary event — không dùng cờ gateway.',
+    },
+  },
+  {
+    element: 'Variables',
+    rule: {
+      en: 'Workflow variables carry references only (caseId, primaryObjectId, approvalResult) — no PII, no blobs.',
+      vi: 'Biến workflow chỉ mang tham chiếu (caseId, primaryObjectId, approvalResult) — không PII, không blob.',
+    },
+  },
+  {
+    element: 'SLA timer',
+    rule: {
+      en: 'SLA is a non-interrupting timer boundary on user tasks; a timeout escalates but never fails the task.',
+      vi: 'SLA là timer boundary không ngắt trên user task; quá hạn chỉ escalate, không làm fail tác vụ.',
+    },
+  },
+];
+
+const NAMESPACES = [
+  { ns: 'auth', contents: 'Ory Hydra, Ory Kratos' },
+  { ns: 'database', contents: 'CloudNativePG PostgreSQL 18 cluster (3-node HA)' },
+  { ns: 'platform', contents: 'NATS (3-node), Valkey (3-node), Garage S3 (3-node), Zeebe 8.5, cloudflared' },
+  { ns: 'arda-app', contents: 'Backend microservices + auth-gateway' },
+  { ns: 'arda-web', contents: 'MFE shell and static assets' },
+];
+
+const DEV_PORTS = [
+  { resource: 'PostgreSQL', access: 'NodePort 30432' },
+  { resource: 'Valkey', access: 'NodePort 30379 (primary) · 30380 (sentinel)' },
+  { resource: 'Hydra admin', access: 'NodePort 30445' },
+  { resource: 'Kratos admin', access: 'NodePort 30446' },
+  { resource: 'NATS', access: 'kubectl port-forward svc/nats 4222:4222' },
+];
 
 export default function ArchitecturePage() {
   const { locale } = usePortalI18n();
+  const isVi = locale === 'vi';
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 border-b border-border pb-6 mb-8">
-        <div>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-2"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            {locale === 'vi' ? 'Quay lại Tổng quan' : 'Back to Overview'}
-          </Link>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            {locale === 'vi' ? 'Kiến trúc Core Banking' : 'Core Banking Architecture'}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {locale === 'vi'
-              ? 'Mô hình hệ thống phân tán, hợp đồng giao dịch toàn vẹn và các nguyên tắc bảo toàn số dư.'
-              : 'Distributed system boundaries, transactional consistency contracts, and ledger balance invariants.'}
-          </p>
-        </div>
-        <LanguageSwitcher />
-      </div>
+    <DocPage>
+      <DocHeader
+        badge="SYSTEM DESIGN"
+        badgeTone="success"
+        title={isVi ? 'Kiến trúc Core Banking' : 'Core Banking Architecture'}
+        description={
+          isVi
+            ? 'Ranh giới hệ thống phân tán, hợp đồng nhất quán giao dịch, bất biến sổ cái và cách dữ liệu/định danh lan truyền qua từng tầng.'
+            : 'Distributed system boundaries, transactional consistency contracts, ledger invariants, and how identity/data propagate through each layer.'
+        }
+      />
 
-      {/* Synthesis Notice / Placeholder Box */}
-      <div className="rounded-lg border border-border bg-card p-6 sm:p-8 space-y-6">
-        <div className="flex items-start gap-4">
-          <div className="p-2.5 rounded-md bg-muted text-muted-foreground border border-border">
-            <Clock className="w-5 h-5" />
-          </div>
-          <div className="space-y-1.5 flex-1">
-            <div className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border">
-              {locale === 'vi' ? 'Đang tổng hợp & chuẩn hóa' : 'Documentation Under Synthesis'}
-            </div>
-            <h2 className="text-base font-semibold text-foreground">
-              {locale === 'vi' ? 'Tài liệu kiến trúc đang được tái cấu trúc' : 'Architecture Documentation Under Consolidation'}
-            </h2>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {locale === 'vi'
-                ? 'Nội dung chi tiết về kiến trúc phân tán, mô hình dữ liệu và các bất biến giao dịch đang được tổng hợp từ các repository dịch vụ (arda-be, arda-mfe, arda-infra) và sẽ được hoàn thiện trong các đợt phát hành sắp tới.'
-                : 'Detailed architectural specifications, distributed transaction boundaries, and ledger invariants are currently being consolidated from service repositories and will be published in upcoming releases.'}
-            </p>
-          </div>
-        </div>
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard value={PLATFORM_FACTS.services} label={isVi ? 'Microservices' : 'Microservices'} hint="Go 1.27 · HTTP + gRPC" />
+        <StatCard value={GATEWAY_UPSTREAMS.length} label={isVi ? 'Tiền tố định tuyến' : 'Gateway route prefixes'} hint="/api/* → service" tone="info" />
+        <StatCard value={PLATFORM_FACTS.policyRoutes} label={isVi ? 'Route được policy hóa' : 'Policy-enforced routes'} hint="auth · risk · permissions" tone="warning" />
+        <StatCard value={PLATFORM_FACTS.bpmnProcesses} label={isVi ? 'Quy trình BPMN' : 'BPMN processes'} hint="Zeebe 8.5" tone="success" />
+      </section>
 
-        {/* Planned Topics Outline */}
-        <div className="border-t border-border/80 pt-6 space-y-3">
-          <div className="text-xs font-semibold text-foreground uppercase tracking-wider">
-            {locale === 'vi' ? 'Các chủ đề đang được chuẩn hóa:' : 'Planned topics in progress:'}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="p-3 rounded border border-border/60 bg-muted/20 flex items-start gap-2.5">
-              <Database className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-              <div>
-                <span className="font-medium text-foreground">
-                  {locale === 'vi' ? 'Sổ cái Ghi sổ kép (General Ledger)' : 'Double-Entry General Ledger'}
-                </span>
-                <p className="text-muted-foreground mt-0.5 text-[11px]">
-                  {locale === 'vi' ? 'Bất biến cân bằng Nợ = Có và tính bất biến bút toán.' : 'Debit = Credit parity and immutable postings.'}
-                </p>
-              </div>
-            </div>
-            <div className="p-3 rounded border border-border/60 bg-muted/20 flex items-start gap-2.5">
-              <GitBranch className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
-              <div>
-                <span className="font-medium text-foreground">
-                  {locale === 'vi' ? 'Saga Phân tán Zeebe BPMN 8.5' : 'Zeebe BPMN Distributed Sagas'}
-                </span>
-                <p className="text-muted-foreground mt-0.5 text-[11px]">
-                  {locale === 'vi' ? 'Worker Idempotency và cơ chế bù trừ giao dịch lỗi.' : 'Worker deduplication and compensation rollbacks.'}
-                </p>
-              </div>
-            </div>
-            <div className="p-3 rounded border border-border/60 bg-muted/20 flex items-start gap-2.5">
-              <ShieldCheck className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-              <div>
-                <span className="font-medium text-foreground">
-                  {locale === 'vi' ? 'Cách ly Đa Người thuê & Zero-Trust' : 'Multi-Tenancy & Zero-Trust'}
-                </span>
-                <p className="text-muted-foreground mt-0.5 text-[11px]">
-                  {locale === 'vi' ? 'Metadata gRPC và cách ly dữ liệu tầng repository.' : 'gRPC metadata propagation and tenant scoping.'}
-                </p>
-              </div>
-            </div>
-            <div className="p-3 rounded border border-border/60 bg-muted/20 flex items-start gap-2.5">
-              <Layers className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-              <div>
-                <span className="font-medium text-foreground">
-                  {locale === 'vi' ? 'Chuẩn hóa Thời gian & Múi giờ' : 'Enterprise Time & Timezones'}
-                </span>
-                <p className="text-muted-foreground mt-0.5 text-[11px]">
-                  {locale === 'vi' ? 'Lưu trữ UTC timestamptz và truy vấn nửa mở [from, to).' : 'UTC storage and half-open interval queries.'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* 1. Edge & request path */}
+      <DocSection
+        index="1"
+        icon={Network}
+        title={isVi ? 'Đường đi Request & Vành Edge' : 'Request Path & Edge Boundary'}
+        description={
+          isVi
+            ? 'Không có client nào gọi thẳng microservice. Mọi request đi qua Cloudflare, tunnel, Traefik forward-auth rồi mới tới auth-gateway.'
+            : 'No client calls a microservice directly. Every request crosses Cloudflare, the tunnel, and Traefik forward-auth before reaching auth-gateway.'
+        }
+      >
+        <CodeBlock
+          title="request-path"
+          code={`Browser / Mobile / API client
+  │
+  ▼  Cloudflare (DDoS / WAF / CDN)
+cloudflared Tunnel
+  │
+  ▼  Traefik Ingress — ForwardAuth → auth-gateway /auth/check
+auth-gateway (BFF, dev :8082)
+  │   resolve session cookie → verify Kratos identity → IAM user context
+  │   enforce policy.yaml (auth / permissions / risk)
+  ▼
+Domain services (HTTP/JSON in, gRPC mTLS between services, NATS events)
+  │
+  ▼
+Data layer: CloudNativePG PostgreSQL 18 · Valkey · Garage S3 · Zeebe 8.5`}
+        />
 
-        {/* Live Catalog CTA */}
-        <div className="border-t border-border/80 pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-          <span className="text-muted-foreground">
-            {locale === 'vi' ? 'Bạn có thể tra cứu toàn bộ 152 mã lỗi đã chuẩn hóa tại:' : 'Explore the live 152 problem specifications at:'}
-          </span>
-          <Link
-            href="/problems/auth.error.unauthorized/"
-            className="text-primary hover:underline font-medium inline-flex items-center gap-1 shrink-0"
-          >
-            {locale === 'vi' ? 'Mở Danh mục Mã Lỗi' : 'Open Problem Catalog'}
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </div>
+        <Callout tone="danger" icon={ShieldCheck} title={isVi ? 'Quy tắc bất biến' : 'Boundary rule'}>
+          {isVi
+            ? 'Service nội bộ không tự kiểm tra đăng nhập: chúng tin vào header do auth-gateway bơm vào và chỉ chạy phía sau mạng nội bộ. Trình duyệt không bao giờ tự đặt được X-Tenant-Id hay X-User-Id.'
+            : 'Internal services do not authenticate: they trust headers injected by auth-gateway and only run inside the cluster network. A browser can never set X-Tenant-Id or X-User-Id itself.'}
+        </Callout>
+      </DocSection>
 
-      {/* Footer Navigation */}
-      <div className="flex items-center justify-between border-t border-border pt-6 mt-12 text-xs">
-        <Link href="/" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-          <ArrowLeft className="w-3.5 h-3.5" />
-          {locale === 'vi' ? 'Về trang chủ' : 'Home'}
-        </Link>
-        <Link href="/api-reference" className="text-primary hover:underline inline-flex items-center gap-1">
-          {locale === 'vi' ? 'Xem tiếp: Cổng API & Chính sách' : 'Next: API Gateway & Policies'}
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-    </div>
+      {/* 2. Gateway routing */}
+      <DocSection
+        index="2"
+        icon={GitBranch}
+        title={isVi ? 'Định tuyến Auth Gateway' : 'Auth Gateway Routing'}
+        description={
+          isVi
+            ? 'auth-gateway khớp tiền tố theo thứ tự cố định và forward sang upstream tương ứng; tiền tố không cấu hình trả 503 upstream_not_configured ngay tại biên.'
+            : 'auth-gateway matches prefixes in a fixed order and forwards to the matching upstream; an unconfigured prefix fails fast at the edge with 503 upstream_not_configured.'
+        }
+      >
+        <DataTable
+          columns={[isVi ? 'Tiền tố' : 'Prefix', 'Upstream service']}
+          minWidth={520}
+          rows={GATEWAY_UPSTREAMS.map((route) => [
+            <code key="prefix" className="font-mono text-[11px] text-primary">
+              {route.prefix}
+            </code>,
+            <code key="service" className="font-mono text-[11px]">
+              {route.service}
+            </code>,
+          ])}
+        />
+      </DocSection>
+
+      {/* 3. Identity propagation */}
+      <DocSection
+        index="3"
+        icon={ShieldCheck}
+        title={isVi ? 'Lan truyền Định danh' : 'Identity Propagation'}
+        description={
+          isVi
+            ? `Sau khi xác thực, gateway bơm bộ header chuẩn vào request nội bộ. Route rủi ro high bắt buộc phiên còn "recent auth" trong ${AUTH_FACTS.recentAuthWindowSeconds} giây.`
+            : `After authentication the gateway injects the standard header set into the internal request. High-risk routes require the session to be "recent auth" within ${AUTH_FACTS.recentAuthWindowSeconds} seconds.`
+        }
+      >
+        <DataTable
+          columns={['Header', isVi ? 'Ý nghĩa' : 'Purpose']}
+          minWidth={620}
+          rows={INJECTED_HEADERS.map((header) => [
+            <code key="header" className="font-mono text-[11px] text-primary">
+              {header.header}
+            </code>,
+            pick(header.purpose, locale),
+          ])}
+        />
+      </DocSection>
+
+      {/* 4. Ledger & persistence */}
+      <DocSection
+        index="4"
+        icon={Database}
+        title={isVi ? 'Sổ cái & Tầng Dữ liệu' : 'Ledger & Data Layer'}
+        description={
+          isVi
+            ? 'finance-service sở hữu động cơ hạch toán; mọi service khác đi qua gRPC PostingService thay vì ghi thẳng bảng kế toán.'
+            : 'finance-service owns the posting engine; every other service calls the gRPC PostingService instead of writing accounting tables directly.'
+        }
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Callout tone="primary" icon={Activity} title="PostingService pipeline">
+            {isVi
+              ? 'Validate (Nợ = Có, cân bằng theo loại tiền, tài khoản nature, kỳ mở) → Post (idempotency key, bút toán bất biến) → Reverse (liên kết bút toán gốc, không sửa/xóa).'
+              : 'Validate (Debit = Credit, per-currency balance, account nature, open period) → Post (idempotency key, immutable entry) → Reverse (linked to the original entry; nothing is edited or deleted).'}
+          </Callout>
+          <Callout tone="info" icon={Database} title={isVi ? 'Lưu trữ' : 'Storage'}>
+            {isVi
+              ? 'CloudNativePG PostgreSQL 18 chạy 3-node HA, failover tự động. Valkey cho cache/hạn ngạch, Garage S3 cho media, mỗi service một database.'
+              : 'CloudNativePG PostgreSQL 18 runs 3-node HA with automated failover. Valkey backs cache/quotas, Garage S3 stores media, and each service owns one database.'}
+          </Callout>
+          <Callout tone="success" icon={Activity} title={isVi ? 'Tổng hợp số dư' : 'Daily balances'}>
+            {isVi
+              ? 'fin_trial_balance_daily được rebuild mỗi ngày sau khi dồn tích/dự phòng post xong, phục vụ cân đối thử và báo cáo tài chính.'
+              : 'fin_trial_balance_daily is rebuilt every day after accrual/provision postings, powering trial balance and financial statements.'}
+          </Callout>
+          <Callout tone="warning" icon={ShieldCheck} title={isVi ? 'Kỳ kế toán' : 'Accounting periods'}>
+            {isVi
+              ? 'Ghi sổ/đảo bút toán đều đi qua kiểm tra kỳ đang mở tại ngày hạch toán; kỳ đóng sẽ trả lỗi thay vì âm thầm ghi nhận.'
+              : 'Posting and reversal always pass an open-period check on the accounting date; closed periods fail loudly instead of silently accepting writes.'}
+          </Callout>
+        </div>
+      </DocSection>
+
+      {/* 5. Events */}
+      <DocSection
+        index="5"
+        icon={Layers}
+        title={isVi ? 'Sự kiện & Outbox' : 'Events & Transactional Outbox'}
+        description={
+          isVi
+            ? 'Tương tác bất đồng bộ chạy trên NATS JetStream với envelope chuẩn hóa; event nghiệp vụ được ghi cùng transaction qua outbox.'
+            : 'Asynchronous integration runs on NATS JetStream with a standard envelope; business events are written in the same transaction via an outbox.'
+        }
+      >
+        <CodeBlock
+          title="ardaevents.Envelope"
+          code={`subject:  arda.<domain>.<aggregate>.<action>.v1
+{
+  "id": "uuid",
+  "event_code": "notification.inbox.created",
+  "schema_version": 1,
+  "occurred_at": "2026-07-04T12:00:00Z",
+  "source_service": "notification-service",
+  "tenant_id": "uuid",
+  "actor": { "user_id": "uuid" },
+  "payload": {}
+}`}
+        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Callout tone="primary" title={isVi ? 'Outbox mặc định' : 'Outbox first'}>
+            {isVi
+              ? 'Ghi outbox row trong cùng transaction với dữ liệu nghiệp vụ; worker nền phát lên NATS. Chỉ publish trực tiếp khi chấp nhận được mất mát.'
+              : 'Insert an outbox row in the same transaction as the business write; a background worker publishes to NATS. Direct publish only when loss is acceptable.'}
+          </Callout>
+          <Callout tone="info" title={isVi ? 'Consumer idempotent' : 'Idempotent consumers'}>
+            {isVi
+              ? 'NATS giao ít nhất một lần, nên consumer phải chống trùng; schema_version dùng để tiến hóa payload không phá vỡ hợp đồng.'
+              : 'NATS delivers at-least-once, so consumers must be idempotent; schema_version evolves payloads without breaking the contract.'}
+          </Callout>
+        </div>
+      </DocSection>
+
+      {/* 6. Workflow boundary */}
+      <DocSection
+        index="6"
+        icon={Workflow}
+        title={isVi ? 'Ranh giới Workflow (Zeebe)' : 'Workflow Boundary (Zeebe)'}
+        description={
+          isVi
+            ? 'Chỉ workflow-service nói chuyện với Zeebe. Domain service tạo hồ sơ qua gRPC CreateCase/SubmitCase; UI gọi HTTP /api/workflow/* qua gateway.'
+            : 'Only workflow-service talks to Zeebe. Domain services create cases via gRPC CreateCase/SubmitCase; the UI calls HTTP /api/workflow/* through the gateway.'
+        }
+      >
+        <DataTable
+          columns={[isVi ? 'Thành phần BPMN' : 'BPMN element', isVi ? 'Quy ước' : 'Contract']}
+          minWidth={620}
+          rows={BPMN_CONTRACT.map((row) => [
+            <code key="element" className="font-mono text-[11px] text-primary">
+              {row.element}
+            </code>,
+            pick(row.rule, locale),
+          ])}
+        />
+        <Callout tone="neutral" icon={Workflow} title={isVi ? 'Tích hợp một luồng phê duyệt' : 'Starting an approval flow'}>
+          {isVi
+            ? '1) Lưu bản nháp ở domain service → 2) gọi workflowClient.CreateCase(caseType, primaryObjectId) → 3) SubmitCase(caseId, actor, variables) bắt đầu process instance → 4) lưu workflow_case_id trên bản ghi nghiệp vụ.'
+            : '1) Persist the draft in the domain service → 2) call workflowClient.CreateCase(caseType, primaryObjectId) → 3) SubmitCase(caseId, actor, variables) starts the process instance → 4) store workflow_case_id on the domain row.'}
+        </Callout>
+      </DocSection>
+
+      {/* 7. Runtime */}
+      <DocSection
+        index="7"
+        icon={GitBranch}
+        title={isVi ? 'Runtime, Namespace & GitOps' : 'Runtime, Namespaces & GitOps'}
+        description={
+          isVi
+            ? 'Một cụm K3s self-hosted 3 node (192.168.10.201–203) phục vụ mọi môi trường; trạng thái mong muốn nằm hoàn toàn trong arda-infra, Argo CD auto-sync + selfHeal.'
+            : 'One self-hosted 3-node K3s cluster (192.168.10.201–203) serves every environment; all desired state lives in arda-infra with Argo CD auto-sync + selfHeal.'
+        }
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <DataTable
+            columns={['Namespace', isVi ? 'Thành phần' : 'Contents']}
+            minWidth={420}
+            rows={NAMESPACES.map((row) => [
+              <code key="ns" className="font-mono text-[11px] text-primary">
+                {row.ns}
+              </code>,
+              row.contents,
+            ])}
+          />
+          <DataTable
+            columns={[isVi ? 'Tài nguyên dev' : 'Dev resource', 'Access']}
+            minWidth={420}
+            rows={DEV_PORTS.map((row) => [row.resource, row.access])}
+          />
+        </div>
+      </DocSection>
+
+      <DocFooterNav
+        previous={{ href: '/guidelines', label: isVi ? 'Xem lại: Quy chuẩn Kỹ thuật' : 'Previous: Engineering Guidelines' }}
+        next={{ href: '/api-reference', label: isVi ? 'Xem tiếp: Cổng API & Chính sách' : 'Next: API Gateway & Policies' }}
+      />
+    </DocPage>
   );
 }

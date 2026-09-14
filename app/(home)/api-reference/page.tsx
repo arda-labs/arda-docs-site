@@ -1,138 +1,302 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import { ShieldCheck, ArrowLeft, ArrowRight, Clock, KeyRound, AlertTriangle, Code2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  Code2,
+  KeyRound,
+  Search,
+  ShieldCheck,
+  Terminal,
+} from 'lucide-react';
 import { usePortalI18n } from '@/components/provider';
-import { LanguageSwitcher } from '@/components/language-switcher';
+import {
+  Callout,
+  CodeBlock,
+  DataTable,
+  DocFooterNav,
+  DocHeader,
+  DocPage,
+  DocSection,
+  StatCard,
+} from '@/components/doc-page';
+import {
+  AUTH_ENDPOINTS,
+  AUTH_FACTS,
+  KRATOS_ENDPOINTS,
+  LIST_QUERY_PARAMS,
+  PLATFORM_FACTS,
+  POLICY_AUTH,
+  POLICY_RISK_TIERS,
+  RETRY_POLICIES,
+  pick,
+} from '@/lib/platform';
+import portalStats from '@/content/portal-stats.json';
+
+const LOOKUP_FIELDS: Array<{ field: string; content: { en: string; vi: string } }> = [
+  { field: 'code', content: { en: 'Canonical problem code, e.g. auth.error.unauthorized.', vi: 'Mã lỗi chuẩn, ví dụ auth.error.unauthorized.' } },
+  { field: 'title', content: { en: 'Short human-readable title of the problem.', vi: 'Tiêu đề ngắn của mã lỗi.' } },
+  { field: 'status', content: { en: 'HTTP status emitted with this problem.', vi: 'Mã HTTP đi kèm mã lỗi này.' } },
+  { field: 'summary', content: { en: 'One-paragraph technical summary.', vi: 'Tóm tắt kỹ thuật một đoạn.' } },
+  { field: 'url', content: { en: 'Canonical docs URL (same as the type field).', vi: 'URL tài liệu chuẩn (trùng trường type).' } },
+  { field: 'client_action', content: { en: 'What the calling client/app must do next.', vi: 'Việc client/ứng dụng gọi API cần làm tiếp.' } },
+  { field: 'operator_action', content: { en: 'Runbook guidance for SRE/operator diagnosis.', vi: 'Hướng dẫn cho SRE/vận hành chẩn đoán.' } },
+  { field: 'related_routes', content: { en: 'API routes that can emit this problem.', vi: 'Các route API có thể phát sinh mã lỗi này.' } },
+  { field: 'body', content: { en: 'Full markdown specification body.', vi: 'Toàn bộ nội dung markdown của trang đặc tả.' } },
+  { field: 'example', content: { en: 'Highlighted sample HTTP request/response.', vi: 'Mẫu request/response HTTP đã tô màu cú pháp.' } },
+];
 
 export default function ApiReferencePage() {
   const { locale } = usePortalI18n();
+  const isVi = locale === 'vi';
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 border-b border-border pb-6 mb-8">
-        <div>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-2"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            {locale === 'vi' ? 'Quay lại Tổng quan' : 'Back to Overview'}
-          </Link>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            {locale === 'vi' ? 'Cổng API & Chính sách Gateway' : 'API Gateway & Policies'}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {locale === 'vi'
-              ? 'Mô hình Ingress BFF, chính sách định tuyến tập trung và hợp đồng giao tiếp chuẩn OpenAPI 3.1.'
-              : 'Ingress BFF architecture, centralized route policy enforcement, and OpenAPI 3.1 specifications.'}
-          </p>
-        </div>
-        <LanguageSwitcher />
-      </div>
+    <DocPage>
+      <DocHeader
+        badge="OPENAPI 3.1 • BFF"
+        badgeTone="info"
+        title={isVi ? 'Cổng API & Chính sách Gateway' : 'API Gateway & Policies'}
+        description={
+          isVi
+            ? 'Mô hình BFF duy nhất, chính sách định tuyến tập trung trong policy.yaml, hợp đồng response chuẩn hóa và API tra cứu mã lỗi máy đọc.'
+            : 'Single BFF ingress, declarative route authorization in policy.yaml, standardized response contracts, and the machine-readable problem lookup API.'
+        }
+      />
 
-      {/* Synthesis Notice / Placeholder Box */}
-      <div className="rounded-lg border border-border bg-card p-6 sm:p-8 space-y-6">
-        <div className="flex items-start gap-4">
-          <div className="p-2.5 rounded-md bg-muted text-muted-foreground border border-border">
-            <Clock className="w-5 h-5" />
-          </div>
-          <div className="space-y-1.5 flex-1">
-            <div className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border">
-              {locale === 'vi' ? 'Đang tổng hợp & chuẩn hóa' : 'Documentation Under Synthesis'}
-            </div>
-            <h2 className="text-base font-semibold text-foreground">
-              {locale === 'vi' ? 'Tài liệu Cổng API & Chính sách đang được tổng hợp' : 'API Gateway & Policy Documentation Under Consolidation'}
-            </h2>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {locale === 'vi'
-                ? 'Đặc tả các endpoint HTTP, mô hình xác thực Ingress BFF, và cơ chế quản lý phân quyền tập trung đang được tổng hợp từ policy.yaml và các bộ hợp đồng OpenAPI. Nội dung sẽ được cập nhật đồng bộ trong các phiên bản sắp tới.'
-                : 'HTTP route specifications, Ingress BFF authentication flows, and centralized access control contracts are being consolidated from policy.yaml and OpenAPI manifests. Specifications will be updated in upcoming releases.'}
-            </p>
-          </div>
-        </div>
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard value={PLATFORM_FACTS.policyRoutes} label={isVi ? 'Route được policy hóa' : 'Policy-enforced routes'} hint={`auth: ${POLICY_AUTH.required} · public: ${POLICY_AUTH.public}`} />
+        <StatCard value={POLICY_RISK_TIERS[3].count} label={isVi ? 'Route rủi ro high' : 'High-risk routes'} hint="recent auth ≤ 5 phút" tone="danger" />
+        <StatCard value={portalStats.totalProblems} label={isVi ? 'Mã lỗi tra cứu được' : 'Lookup-able problem codes'} hint="RFC 7807 · /api/lookup" tone="success" />
+        <StatCard value={AUTH_FACTS.aiRateLimitPerMinute} label={isVi ? 'Req/phút cho endpoint AI' : 'AI requests per minute'} hint="per user/tenant · 429" tone="warning" />
+      </section>
 
-        {/* Planned Topics Outline */}
-        <div className="border-t border-border/80 pt-6 space-y-3">
-          <div className="text-xs font-semibold text-foreground uppercase tracking-wider">
-            {locale === 'vi' ? 'Các chủ đề đang được chuẩn hóa:' : 'Planned topics in progress:'}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="p-3 rounded border border-border/60 bg-muted/20 flex items-start gap-2.5">
-              <ShieldCheck className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-              <div>
-                <span className="font-medium text-foreground">
-                  {locale === 'vi' ? 'Mô hình Ingress Auth Gateway (Port 8082)' : 'Ingress Auth Gateway Model (Port 8082)'}
-                </span>
-                <p className="text-muted-foreground mt-0.5 text-[11px]">
-                  {locale === 'vi' ? 'Cổng giao tiếp đơn điểm BFF, giải mã phiên và dịch gRPC.' : 'Single BFF ingress, session resolution, and gRPC dispatch.'}
-                </p>
-              </div>
-            </div>
-            <div className="p-3 rounded border border-border/60 bg-muted/20 flex items-start gap-2.5">
-              <KeyRound className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
-              <div>
-                <span className="font-medium text-foreground">
-                  {locale === 'vi' ? 'Quản lý Quyền tập trung (policy.yaml)' : 'Centralized Authorization (policy.yaml)'}
-                </span>
-                <p className="text-muted-foreground mt-0.5 text-[11px]">
-                  {locale === 'vi' ? 'Chính sách RBAC định tuyến tập trung, microservice không tự auth.' : 'Declarative route policy; internal services assume verified auth.'}
-                </p>
-              </div>
-            </div>
-            <div className="p-3 rounded border border-border/60 bg-muted/20 flex items-start gap-2.5">
-              <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-              <div>
-                <span className="font-medium text-foreground">
-                  {locale === 'vi' ? '4 Phân cấp Rủi ro (Risk Tiers)' : 'Four Route Risk Tiers'}
-                </span>
-                <p className="text-muted-foreground mt-0.5 text-[11px]">
-                  {locale === 'vi' ? 'Phân loại none, low, medium, high (yêu cầu recent auth 5 phút).' : 'Tiers: none, low, medium, and high (requires step-up auth).'}
-                </p>
-              </div>
-            </div>
-            <div className="p-3 rounded border border-border/60 bg-muted/20 flex items-start gap-2.5">
-              <Code2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-              <div>
-                <span className="font-medium text-foreground">
-                  {locale === 'vi' ? 'Hợp đồng Lỗi RFC 7807 & API Tra cứu' : 'RFC 7807 Contract & Lookup API'}
-                </span>
-                <p className="text-muted-foreground mt-0.5 text-[11px]">
-                  {locale === 'vi' ? 'API /api/lookup tra cứu mã lỗi máy đọc phục vụ AI và CI/CD.' : 'Automated machine-readable lookup endpoint for AI agents.'}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* 1. Access */}
+      <DocSection
+        index="1"
+        icon={Terminal}
+        title={isVi ? 'Truy cập & Môi trường' : 'Access & Environments'}
+      >
+        <DataTable
+          columns={['Environment', 'Base URL']}
+          minWidth={520}
+          rows={[
+            ['Production', <code key="p" className="font-mono text-[11px] text-primary">https://api.arda.io.vn</code>],
+            [isVi ? 'Gateway dev (BFF)' : 'Local BFF gateway', <code key="l" className="font-mono text-[11px]">http://localhost:8082</code>],
+            ['OIDC issuer', <code key="i" className="font-mono text-[11px]">https://auth.arda.io.vn</code>],
+          ]}
+        />
+        <Callout tone="info" icon={ShieldCheck} title={isVi ? 'Mọi request đi qua BFF' : 'Everything goes through the BFF'}>
+          {isVi
+            ? 'Frontend không bao giờ gọi trực tiếp Ory Hydra/Kratos hay microservice. Gateway proxy /api/kratos/* cho luồng tự phục vụ và /api/* cho nghiệp vụ, giữ cookie phiên same-origin.'
+            : 'The frontend never calls Ory Hydra/Kratos or a microservice directly. The gateway proxies /api/kratos/* for self-service flows and /api/* for business APIs, keeping the session cookie same-origin.'}
+        </Callout>
+      </DocSection>
 
-        {/* Live Catalog CTA */}
-        <div className="border-t border-border/80 pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-          <span className="text-muted-foreground">
-            {locale === 'vi' ? 'Bạn có thể tra cứu toàn bộ 152 mã lỗi đã chuẩn hóa tại:' : 'Explore the live 152 problem specifications at:'}
-          </span>
-          <Link
-            href="/problems/auth.error.unauthorized/"
-            className="text-primary hover:underline font-medium inline-flex items-center gap-1 shrink-0"
-          >
-            {locale === 'vi' ? 'Mở Danh mục Mã Lỗi' : 'Open Problem Catalog'}
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </div>
+      {/* 2. Session endpoints */}
+      <DocSection
+        index="2"
+        icon={KeyRound}
+        title={isVi ? 'Phiên & Luồng Đăng nhập' : 'Session & Login Flow'}
+        description={
+          isVi
+            ? 'Chuỗi BFF cho OAuth2/OIDC: bắt đầu uỷ quyền → Kratos xác thực mật khẩu → Hydra accept-login → callback đổi token → phiên BFF; sau đó /api/auth/me cấp ngữ cảnh tenant.'
+            : 'The BFF chain for OAuth2/OIDC: start authorization → Kratos validates credentials → Hydra accept-login → callback exchanges tokens → BFF session; /api/auth/me then serves tenant context.'
+        }
+      >
+        <DataTable
+          columns={['Method', 'Endpoint', isVi ? 'Chức năng' : 'Purpose']}
+          minWidth={680}
+          rows={AUTH_ENDPOINTS.map((endpoint) => [
+            <code key="m" className="font-mono text-[11px] text-primary">
+              {endpoint.method}
+            </code>,
+            <code key="p" className="font-mono text-[11px]">
+              {endpoint.path}
+            </code>,
+            pick(endpoint.purpose, locale),
+          ])}
+        />
+      </DocSection>
 
-      {/* Footer Navigation */}
-      <div className="flex items-center justify-between border-t border-border pt-6 mt-12 text-xs">
-        <Link href="/architecture" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-          <ArrowLeft className="w-3.5 h-3.5" />
-          {locale === 'vi' ? 'Xem lại: Kiến trúc' : 'Previous: Architecture'}
-        </Link>
-        <Link href="/workflows" className="text-primary hover:underline inline-flex items-center gap-1">
-          {locale === 'vi' ? 'Xem tiếp: Quy trình Vận hành' : 'Next: Workflows & Runbooks'}
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-    </div>
+      {/* 3. Kratos proxy */}
+      <DocSection
+        index="3"
+        icon={ShieldCheck}
+        title={isVi ? 'Proxy Ory Kratos (Self-service)' : 'Ory Kratos Proxy (Self-service)'}
+      >
+        <DataTable
+          columns={['Method', 'Endpoint', isVi ? 'Chức năng' : 'Purpose']}
+          minWidth={680}
+          rows={KRATOS_ENDPOINTS.map((endpoint) => [
+            <code key="m" className="font-mono text-[11px] text-primary">
+              {endpoint.method}
+            </code>,
+            <code key="p" className="font-mono text-[11px]">
+              {endpoint.path}
+            </code>,
+            pick(endpoint.purpose, locale),
+          ])}
+        />
+      </DocSection>
+
+      {/* 4. Policy */}
+      <DocSection
+        index="4"
+        icon={ShieldCheck}
+        title={isVi ? 'Chính sách Phân quyền Route' : 'Route Authorization Policy'}
+        description={
+          isVi
+            ? 'Toàn bộ 78 route được khai báo tập trung trong apps/auth-gateway/configs/policy.yaml. Gateway khớp path + method, kiểm tra phiên, permission và mức rủi ro trước khi forward.'
+            : 'All 78 routes are declared in apps/auth-gateway/configs/policy.yaml. The gateway matches path + method, then checks session, permissions, and risk tier before forwarding.'
+        }
+      >
+        <DataTable
+          columns={[isVi ? 'Mức rủi ro' : 'Risk tier', isVi ? 'Số route' : 'Routes', isVi ? 'Hành vi' : 'Behavior']}
+          minWidth={560}
+          rows={POLICY_RISK_TIERS.map((tier) => [
+            <code key="t" className="font-mono text-[11px] text-primary">
+              {tier.tier}
+            </code>,
+            tier.count,
+            pick(tier.behavior, locale),
+          ])}
+        />
+        <CodeBlock
+          title="policy.yaml — route mẫu"
+          code={`routes:
+  - id: ai-settings-write
+    path: /api/ai/settings/**
+    methods: [POST, PUT, PATCH, DELETE]
+    auth: true
+    risk: high
+    permissions:
+      - ai.admin
+      - superadmin
+      - platform.manage`}
+        />
+        <Callout tone="warning" icon={AlertTriangle} title={isVi ? 'Mã lỗi bị từ chối' : 'Denial codes'}>
+          {isVi
+            ? '401 user_context_unavailable (phiên không giải được), 403 insufficient_permissions (thiếu quyền), 403 organization_forbidden (đơn vị không thuộc membership), 403 recent_auth_required (rủi ro cao nhưng phiên đã cũ).'
+            : '401 user_context_unavailable (session not resolvable), 403 insufficient_permissions (missing grant), 403 organization_forbidden (org not in membership), 403 recent_auth_required (high risk with a stale session).'}
+        </Callout>
+      </DocSection>
+
+      {/* 5. Response contracts */}
+      <DocSection
+        index="5"
+        icon={Code2}
+        title={isVi ? 'Hợp đồng Response' : 'Response Contracts'}
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <CodeBlock
+            title="success envelope"
+            code={`{
+  "result": { ... },
+  "success": true,
+  "errors": [],
+  "messages": [],
+  "meta": { "request_id": "...", "trace_id": "...", "timestamp": "..." }
+}`}
+          />
+          <CodeBlock
+            title="problem+json (error)"
+            code={`HTTP/1.1 401 Unauthorized
+Content-Type: application/problem+json
+
+{
+  "type": "https://docs.arda.io.vn/problems/auth.error.unauthorized/",
+  "title": "Unauthorized",
+  "status": 401,
+  "code": "auth.error.unauthorized",
+  "message": "Bearer token is missing or has expired",
+  "errors": [],
+  "request_id": "req_88f912a7d4c",
+  "trace_id": "trc_4b9a110ef"
+}`}
+          />
+        </div>
+        <Callout tone="neutral" title={isVi ? 'Danh sách phân trang' : 'Paginated lists'}>
+          {isVi
+            ? 'Endpoint list trả result dạng { items, page, per_page, total } (hoặc bare list ở surface cũ). Query chuẩn: page, per_page (≤100), sort, order, q, view, all=1 (tối đa 500 dòng).'
+            : 'List endpoints return result as { items, page, per_page, total } (bare lists exist on legacy surfaces). Standard query: page, per_page (≤100), sort, order, q, view, all=1 (capped at 500 rows).'}
+        </Callout>
+        <DataTable
+          columns={[isVi ? 'Tham số' : 'Parameter', isVi ? 'Giá trị' : 'Value']}
+          minWidth={520}
+          rows={LIST_QUERY_PARAMS.map((row) => [
+            <code key="p" className="font-mono text-[11px] text-primary">
+              {row.param}
+            </code>,
+            row.value,
+          ])}
+        />
+        <Callout tone="info" title={isVi ? 'Tương quan & truy vết' : 'Correlation'}>
+          {isVi
+            ? 'Mọi response mang X-Request-Id (và X-Trace-Id khi có traceparent). Header trùng với request_id/trace_id trong body lỗi, phục vụ đối soát xuyên service.'
+            : 'Every response carries X-Request-Id (plus X-Trace-Id when traceparent exists). The headers match request_id/trace_id in the error body for cross-service reconciliation.'}
+        </Callout>
+      </DocSection>
+
+      {/* 6. Lookup API */}
+      <DocSection
+        index="6"
+        icon={Search}
+        title={isVi ? 'API Tra cứu Máy đọc' : 'Machine Lookup API'}
+        description={
+          isVi
+            ? 'Cho AI agent, IDE plugin và runbook: tra cứu đặc tả lỗi trực tiếp từ Cloudflare Edge với CORS mở.'
+            : 'For AI agents, IDE plugins, and runbooks: fetch a problem specification straight from the Cloudflare edge with open CORS.'
+        }
+      >
+        <CodeBlock
+          title="lookup"
+          code={`$ curl -s "https://docs.arda.io.vn/api/lookup?code=auth.error.unauthorized"
+# 200 + cache-control: no-store, access-control-allow-origin: *
+# 404 + { "suggestions": ["...nearest codes..."] }`}
+        />
+        <DataTable
+          columns={['Field', isVi ? 'Nội dung' : 'Content']}
+          minWidth={520}
+          rows={LOOKUP_FIELDS.map((entry) => [
+            <code key="f" className="font-mono text-[11px] text-primary">
+              {entry.field}
+            </code>,
+            pick(entry.content, locale),
+          ])}
+        />
+      </DocSection>
+
+      {/* 7. Retry policies */}
+      <DocSection
+        index="7"
+        icon={AlertTriangle}
+        title={isVi ? 'Chính sách Thử lại theo Mã lỗi' : 'Per-Code Retry Policies'}
+        description={
+          isVi
+            ? 'Mỗi mã lỗi gắn một chính sách thử lại; số lượng bên dưới được đếm từ danh mục khi build.'
+            : 'Every problem code carries a retry policy; the counts below are computed from the catalog at build time.'
+        }
+      >
+        <DataTable
+          columns={['Policy', isVi ? 'Số mã' : 'Codes', isVi ? 'Ngữ nghĩa' : 'Semantics']}
+          minWidth={680}
+          rows={RETRY_POLICIES.map((policy) => {
+            const count = portalStats.retryPolicies.find((p) => p.policy === policy.policy)?.count ?? 0;
+            return [
+              <code key="p" className="font-mono text-[11px] text-primary">
+                {policy.policy}
+              </code>,
+              count,
+              pick(policy.meaning, locale),
+            ];
+          })}
+        />
+      </DocSection>
+
+      <DocFooterNav
+        previous={{ href: '/architecture', label: isVi ? 'Xem lại: Kiến trúc' : 'Previous: Architecture' }}
+        next={{ href: '/workflows', label: isVi ? 'Xem tiếp: Quy trình Vận hành' : 'Next: Workflows & Operations' }}
+      />
+    </DocPage>
   );
 }

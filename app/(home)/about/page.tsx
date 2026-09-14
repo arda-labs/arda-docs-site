@@ -3,64 +3,90 @@
 import React from 'react';
 import Link from 'next/link';
 import {
-  ArrowLeft,
-  Landmark,
-  ShieldCheck,
-  Server,
-  Layers,
-  GitBranch,
-  Terminal,
   Cpu,
   ExternalLink,
+  GitBranch,
+  Landmark,
+  Layers,
+  Server,
+  ShieldCheck,
 } from 'lucide-react';
 import { usePortalI18n } from '@/components/provider';
+import {
+  Callout,
+  DataTable,
+  DocFooterNav,
+  DocHeader,
+  DocPage,
+  DocSection,
+  StatCard,
+} from '@/components/doc-page';
+import {
+  MFE_MODULES,
+  PLATFORM_FACTS,
+  REPOSITORIES,
+  SERVICES,
+  TECH_STACK,
+  pick,
+} from '@/lib/platform';
+import portalStats from '@/content/portal-stats.json';
 
 export default function AboutPage() {
   const { locale } = usePortalI18n();
   const isVi = locale === 'vi';
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-10">
-      {/* Header */}
-      <div className="border-b border-border pb-6 space-y-2">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-1"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          {isVi ? 'Quay lại Tổng quan' : 'Back to Overview'}
-        </Link>
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-primary/10 text-primary border border-primary/20">
-            PLATFORM PROFILE
-          </span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-          {isVi ? 'Giới thiệu về Arda Core Banking' : 'About Arda Core Banking Platform'}
-        </h1>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {isVi
-            ? 'Nền tảng ngân hàng lõi phân tán thế hệ mới, xây dựng trên kiến trúc hướng sự kiện, bảo vệ bất biến sổ cái và kiểm soát truy cập Zero-Trust.'
-            : 'Next-generation distributed core banking system built on event-driven sagas, ledger invariant safety, and Zero-Trust access control.'}
-        </p>
-      </div>
+    <DocPage>
+      <DocHeader
+        badge="PLATFORM PROFILE"
+        title={isVi ? 'Giới thiệu về Arda Core Banking' : 'About Arda Core Banking Platform'}
+        description={
+          isVi
+            ? 'Nền tảng ngân hàng lõi phân tán, đa người thuê: microservices Go sau cổng BFF, Module Federation frontend, sổ cái ghi sổ kép bất biến và hạ tầng K3s GitOps tự vận hành.'
+            : 'Multi-tenant distributed core banking platform: Go microservices behind a BFF edge, Module Federation frontend, immutable double-entry ledger, and a self-hosted K3s GitOps runtime.'
+        }
+      />
 
-      {/* Overview */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-          <Landmark className="w-5 h-5 text-primary" />
-          <span>{isVi ? 'Tầm nhìn & Sứ mệnh Kỹ thuật' : 'Engineering Vision & Mission'}</span>
-        </h2>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {isVi
-            ? 'Arda được thiết kế nhằm giải quyết các bài toán hóc búa nhất của hệ thống tài chính hiện đại: duy trì tính toàn vẹn của sổ cái kép (double-entry bookkeeping), xử lý các quy trình phê duyệt tín dụng nhiều bước qua saga phân tán, và hỗ trợ đa người thuê (multi-tenant) với độ bảo mật tuyệt đối.'
-            : 'Arda is engineered to address the core challenges of modern financial systems: guaranteeing double-entry ledger invariants, coordinating multi-step loan workflows via distributed sagas, and enforcing strict multi-tenant isolation.'}
-        </p>
+      {/* Numbers */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard
+          value={PLATFORM_FACTS.services}
+          label={isVi ? 'Go microservices' : 'Go microservices'}
+          hint={isVi ? 'HTTP/JSON + gRPC mTLS + NATS' : 'HTTP/JSON + gRPC mTLS + NATS'}
+        />
+        <StatCard
+          value={`1 + ${PLATFORM_FACTS.remotes}`}
+          label={isVi ? 'Shell + remote MFE' : 'Shell + MFE remotes'}
+          hint="Bun · Vite 8 · Module Federation"
+          tone="info"
+        />
+        <StatCard
+          value={portalStats.totalProblems}
+          label={isVi ? 'Mã lỗi RFC 7807' : 'RFC 7807 problem codes'}
+          hint={`${portalStats.clientErrors} × 4xx · ${portalStats.serverErrors} × 5xx`}
+          tone="success"
+        />
+        <StatCard
+          value={`${PLATFORM_FACTS.clusterNodes} nodes`}
+          label={isVi ? 'Cụm K3s tự vận hành' : 'Self-hosted K3s cluster'}
+          hint="Argo CD · Cloudflare Tunnel"
+          tone="warning"
+        />
+      </section>
 
-        {/* 3 Pillars */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+      {/* Vision */}
+      <DocSection
+        icon={Landmark}
+        title={isVi ? 'Tầm nhìn & Sứ mệnh Kỹ thuật' : 'Engineering Vision & Mission'}
+        description={
+          isVi
+            ? 'Arda giải quyết ba bài toán khó của hệ tài chính hiện đại: toàn vẹn sổ cái kép, quy trình phê duyệt nhiều bước chạy dài, và cách ly dữ liệu tuyệt đối giữa các tổ chức.'
+            : 'Arda targets three hard problems of modern financial systems: double-entry ledger integrity, long-running multi-step approval flows, and strict isolation between financial organizations.'
+        }
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 rounded-xl border border-border bg-card space-y-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <ShieldCheck className="w-4 h-4" />
             </div>
             <h3 className="font-semibold text-sm text-foreground">
@@ -68,13 +94,13 @@ export default function AboutPage() {
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
               {isVi
-                ? 'Nguyên tắc hạch toán kép bất biến. Số dư không bao giờ âm khi chưa được cấp hạn mức thấu chi.'
-                : 'Immutable double-entry balance accounting. Zero drift tolerance across all accounts.'}
+                ? 'Mọi bút toán đi qua PostingService: kiểm tra Nợ = Có, cân bằng theo từng loại tiền, khóa kỳ kế toán, chống trùng bằng idempotency key và đảo bút toán bất biến.'
+                : 'Every posting runs through PostingService: Debit = Credit parity, per-currency balance, period gates, idempotency keys, and immutable reversal links.'}
             </p>
           </div>
 
           <div className="p-4 rounded-xl border border-border bg-card space-y-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
               <Layers className="w-4 h-4" />
             </div>
             <h3 className="font-semibold text-sm text-foreground">
@@ -82,13 +108,13 @@ export default function AboutPage() {
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
               {isVi
-                ? 'Mọi yêu cầu đều được ràng buộc ngữ cảnh tenant_id, dữ liệu được cô lập logic hoàn toàn ở tầng DB.'
-                : 'Strict tenant context propagation. Row-level tenancy boundaries enforced across all queries.'}
+                ? 'Tenant lấy từ phiên BFF, không cho client tự khai; đơn vị đang chọn được đối chiếu membership trước khi forward. Mỗi service sở hữu database riêng.'
+                : 'Tenant comes from the BFF session — clients can never assert it; the active org is validated against membership before forwarding. Each service owns its database.'}
             </p>
           </div>
 
           <div className="p-4 rounded-xl border border-border bg-card space-y-2">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
               <Cpu className="w-4 h-4" />
             </div>
             <h3 className="font-semibold text-sm text-foreground">
@@ -96,88 +122,108 @@ export default function AboutPage() {
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
               {isVi
-                ? '152 mã lỗi chuẩn RFC 7807, OpenAPI 3.1 và endpoint tra cứu tự động cho AI agent / CLI.'
-                : '152 standardized RFC 7807 problem codes, OpenAPI 3.1, and live machine lookup API.'}
+                ? `${portalStats.totalProblems} mã lỗi RFC 7807 được CI kiểm chứng 100%, OpenAPI 3.1, và API tra cứu /api/lookup mở CORS * cho AI agent/CLI.`
+                : `${portalStats.totalProblems} RFC 7807 problem codes validated by CI, OpenAPI 3.1 contracts, and the CORS-open /api/lookup machine API for agents and CLI tooling.`}
             </p>
           </div>
         </div>
-      </section>
+      </DocSection>
 
-      {/* Tech Stack Breakdown */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-          <Server className="w-5 h-5 text-primary" />
-          <span>{isVi ? 'Hệ sinh thái & Công nghệ Lõi' : 'Technology Architecture'}</span>
-        </h2>
+      {/* Service inventory */}
+      <DocSection
+        icon={Server}
+        title={isVi ? 'Danh mục Microservices Backend' : 'Backend Service Inventory'}
+        description={
+          isVi
+            ? `Toàn bộ ${PLATFORM_FACTS.services} service dùng chung thư viện libs/go/*, thống nhất cổng container HTTP 8080 / gRPC 9090; mỗi service sở hữu một database PostgreSQL riêng.`
+            : `All ${PLATFORM_FACTS.services} services share the libs/go/* libraries and unify container ports at HTTP 8080 / gRPC 9090; every service owns its own PostgreSQL database.`}
+      >
+        <DataTable
+          columns={[
+            isVi ? 'Service' : 'Service',
+            'Database',
+            isVi ? 'Trách nhiệm' : 'Responsibility',
+          ]}
+          rows={SERVICES.map((service) => [
+            <code key="name" className="font-mono text-[11px] text-primary">
+              {service.name}
+            </code>,
+            <code key="db" className="font-mono text-[11px]">
+              {service.database}
+            </code>,
+            pick(service.responsibility, locale),
+          ])}
+        />
+      </DocSection>
 
-        <div className="p-5 rounded-xl border border-border bg-card space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <div className="font-bold text-foreground flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-blue-500" />
-                <span>Backend Services (`arda-be`)</span>
-              </div>
-              <p className="text-muted-foreground leading-relaxed">
-                {isVi
-                  ? '11 microservices viết bằng Golang, liên lạc nội bộ bằng gRPC qua TLS, quản lý luồng bằng Camunda Zeebe và cơ sở dữ liệu PostgreSQL.'
-                  : '11 Go microservices communicating via internal gRPC over mTLS, orchestrated by Zeebe Sagas with PostgreSQL storage.'}
-              </p>
-            </div>
+      {/* MFE modules */}
+      <DocSection
+        icon={Layers}
+        title={isVi ? 'Frontend Module Federation' : 'Frontend Module Federation'}
+        description={
+          isVi
+            ? 'Mỗi remote là một deployment unit độc lập, chỉ export ./Routes; shell giữ layout, phiên đăng nhập và nạp remote theo lazy. Cổng dev là registry cố định trong federation.shared.ts.'
+            : 'Each remote is an independent deployment unit exposing only ./Routes; the shell owns layout, session bootstrap and lazy loading. Dev ports come from the fixed registry in federation.shared.ts.'
+        }
+      >
+        <DataTable
+          columns={['Module', isVi ? 'Cổng dev' : 'Dev port', isVi ? 'Phạm vi' : 'Scope']}
+          rows={MFE_MODULES.map((module) => [
+            <code key="name" className="font-mono text-[11px] text-primary">
+              {module.name}
+            </code>,
+            <code key="port" className="font-mono text-[11px]">
+              {module.port}
+            </code>,
+            pick(module.scope, locale),
+          ])}
+        />
+      </DocSection>
 
-            <div className="space-y-1.5">
-              <div className="font-bold text-foreground flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span>Frontend MFE (`arda-mfe`)</span>
-              </div>
-              <p className="text-muted-foreground leading-relaxed">
-                {isVi
-                  ? 'Kiến trúc Module Federation: 1 Shell điều phối + 7 Remotes độc lập, phát triển trên nền Bun, React và Vite, bảo đảm tính tự chủ deploy.'
-                  : 'Module Federation architecture: 1 Shell + 7 autonomous Remotes built with Bun, React, and Vite for independent releases.'}
-              </p>
-            </div>
+      {/* Tech stack */}
+      <DocSection
+        icon={GitBranch}
+        title={isVi ? 'Ngăn xếp Công nghệ' : 'Technology Stack'}
+      >
+        <DataTable
+          columns={[isVi ? 'Tầng' : 'Layer', isVi ? 'Công nghệ' : 'Technology']}
+          minWidth={640}
+          rows={TECH_STACK.map((row) => [row.layer, row.technology])}
+        />
+      </DocSection>
 
-            <div className="space-y-1.5">
-              <div className="font-bold text-foreground flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
-                <span>Hạ tầng GitOps (`arda-infra`)</span>
-              </div>
-              <p className="text-muted-foreground leading-relaxed">
-                {isVi
-                  ? 'Cụm K3s self-hosted 3-node, triển khai hoàn toàn qua GitOps với Argo CD (auto-sync, self-heal) và định tuyến bảo mật Cloudflare Tunnel.'
-                  : 'Self-hosted 3-node K3s cluster managed via Argo CD GitOps with automated self-healing and Cloudflare Tunnel routing.'}
-              </p>
-            </div>
+      {/* Repositories + delivery */}
+      <DocSection
+        icon={ExternalLink}
+        title={isVi ? 'Kho mã nguồn & Luồng phát hành' : 'Repositories & Delivery'}
+      >
+        <DataTable
+          columns={[isVi ? 'Kho' : 'Repository', isVi ? 'Mục đích' : 'Purpose']}
+          rows={REPOSITORIES.map((repo) => [
+            <a
+              key="name"
+              href={repo.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 font-mono text-[11px] text-primary hover:underline"
+            >
+              {repo.name}
+              <ExternalLink className="w-3 h-3 opacity-70" />
+            </a>,
+            pick(repo.purpose, locale),
+          ])}
+        />
+        <Callout tone="info" icon={GitBranch} title={isVi ? 'Đường phát hành' : 'Delivery pipeline'}>
+          {isVi
+            ? 'Push main (arda-be / arda-mfe) → GitHub Actions build & push image GHCR → Argo CD image updater ghi digest mới vào arda-infra → auto-sync + selfHeal về cụm K3s. Portal tài liệu và bản MFE edge deploy qua Cloudflare Workers.'
+            : 'Push to main (arda-be / arda-mfe) → GitHub Actions builds and pushes GHCR images → the Argo CD image updater pins the new digest in arda-infra → auto-sync + selfHeal into the K3s cluster. The docs portal and edge MFE deploy via Cloudflare Workers.'}
+        </Callout>
+      </DocSection>
 
-            <div className="space-y-1.5">
-              <div className="font-bold text-foreground flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-purple-500" />
-                <span>Cổng Tài liệu (`arda-docs-site`)</span>
-              </div>
-              <p className="text-muted-foreground leading-relaxed">
-                {isVi
-                  ? 'Next.js SSG bespoke, hiển thị Markdoc & Shiki syntax highlighter, tích hợp máy tra cứu mã lỗi tự động CORS * tại Cloudflare Edge.'
-                  : 'Next.js static site powered by Markdoc and Shiki, backed by a Cloudflare Edge Worker for zero-latency machine code lookups.'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Navigation Links */}
-      <div className="pt-6 border-t border-border flex items-center justify-between">
-        <Link
-          href="/guidelines"
-          className="text-xs font-semibold text-primary hover:underline"
-        >
-          {isVi ? '← Đọc Quy chuẩn Kỹ thuật' : '← Read Engineering Guidelines'}
-        </Link>
-        <Link
-          href="/terms-of-service"
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {isVi ? 'Điều khoản Dịch vụ →' : 'Terms of Service →'}
-        </Link>
-      </div>
-    </div>
+      <DocFooterNav
+        previous={{ href: '/guidelines', label: isVi ? 'Quy chuẩn Kỹ thuật' : 'Engineering Guidelines' }}
+        next={{ href: '/terms-of-service', label: isVi ? 'Điều khoản Dịch vụ' : 'Terms of Service' }}
+      />
+    </DocPage>
   );
 }

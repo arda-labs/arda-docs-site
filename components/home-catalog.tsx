@@ -17,6 +17,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { usePortalI18n } from './provider';
+import { PLATFORM_FACTS } from '@/lib/platform';
+import portalStats from '@/content/portal-stats.json';
 
 interface HomeCatalogProps {
   onOpenSearch?: () => void;
@@ -36,10 +38,10 @@ export function HomeCatalog({ onOpenSearch }: HomeCatalogProps) {
 
   const POPULAR_CODES = [
     { code: 'auth.error.unauthorized', status: 401, title: 'Unauthorized Session' },
-    { code: 'iam.error.forbidden', status: 403, title: 'Forbidden Access' },
-    { code: 'validation.error.invalid_payload', status: 400, title: 'Invalid Payload' },
+    { code: 'insufficient_permissions', status: 403, title: 'Forbidden Access' },
+    { code: 'validation.invalid_input', status: 400, title: 'Invalid Payload' },
     { code: 'tenant_context_unavailable', status: 400, title: 'Tenant Context Required' },
-    { code: 'gateway.error.rate_limited', status: 429, title: 'Rate Limited' },
+    { code: 'ai.rate_limited', status: 429, title: 'Rate Limited' },
     { code: 'ai.model_unavailable', status: 503, title: 'Model Unavailable' },
   ];
 
@@ -73,7 +75,9 @@ export function HomeCatalog({ onOpenSearch }: HomeCatalogProps) {
               <div className="flex items-center gap-2.5 truncate">
                 <Search className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 <span className="text-muted-foreground group-hover:text-foreground transition-colors">
-                  {isVi ? 'Tìm kiếm trong 152 mã lỗi, endpoints, kiến trúc...' : 'Search 152 error codes, endpoints, architecture...'}
+                  {isVi
+                    ? `Tìm kiếm trong ${portalStats.totalProblems} mã lỗi, endpoints, kiến trúc...`
+                    : `Search ${portalStats.totalProblems} error codes, endpoints, architecture...`}
                 </span>
               </div>
               <kbd className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-mono bg-muted text-muted-foreground rounded border border-border">
@@ -102,7 +106,7 @@ export function HomeCatalog({ onOpenSearch }: HomeCatalogProps) {
                   <Terminal className="w-5 h-5" />
                 </div>
                 <span className="text-[10.5px] font-bold font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                  152 CODES • RFC 7807
+                  {portalStats.totalProblems} CODES • RFC 7807
                 </span>
               </div>
 
@@ -112,8 +116,8 @@ export function HomeCatalog({ onOpenSearch }: HomeCatalogProps) {
 
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 {isVi
-                  ? 'Thư mục 152 mã lỗi chuẩn máy đọc, cẩm nang khắc phục cho Client & SRE, và API tra cứu tự động.'
-                  : '152 standardized machine-readable problem specifications with remediation guides and live /api/lookup.'}
+                  ? `Thư mục ${portalStats.totalProblems} mã lỗi chuẩn máy đọc, cẩm nang khắc phục cho Client & SRE, và API tra cứu tự động.`
+                  : `${portalStats.totalProblems} standardized machine-readable problem specifications with remediation guides and live /api/lookup.`}
               </p>
             </div>
 
@@ -262,7 +266,7 @@ export function HomeCatalog({ onOpenSearch }: HomeCatalogProps) {
                   <Layers className="w-5 h-5" />
                 </div>
                 <span className="text-[10.5px] font-bold font-mono px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">
-                  PLATFORM • 11 SERVICES
+                  PLATFORM • {PLATFORM_FACTS.services} SERVICES
                 </span>
               </div>
 
@@ -272,8 +276,8 @@ export function HomeCatalog({ onOpenSearch }: HomeCatalogProps) {
 
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 {isVi
-                  ? 'Hệ sinh thái 11 Go microservices, kiến trúc frontend Module Federation (Bun + Vite) và cụm hạ tầng K3s GitOps.'
-                  : 'Ecosystem of 11 Go microservices, Bun + Vite Module Federation, and self-hosted K3s GitOps cluster.'}
+                  ? `Hệ sinh thái ${PLATFORM_FACTS.services} Go microservices, kiến trúc frontend Module Federation (Bun + Vite) và cụm hạ tầng K3s GitOps.`
+                  : `Ecosystem of ${PLATFORM_FACTS.services} Go microservices, Bun + Vite Module Federation, and self-hosted K3s GitOps cluster.`}
               </p>
             </div>
 
@@ -336,7 +340,9 @@ export function HomeCatalog({ onOpenSearch }: HomeCatalogProps) {
           </div>
           <div className="p-3 rounded-lg bg-muted/40 border border-border hover:border-border/80 transition-colors">
             <div className="text-[11px] text-muted-foreground">Microservices Network</div>
-            <div className="font-mono font-bold text-foreground mt-0.5 truncate">11 Services (Go + mTLS)</div>
+            <div className="font-mono font-bold text-foreground mt-0.5 truncate">
+              {PLATFORM_FACTS.services} Services (Go + mTLS)
+            </div>
           </div>
         </div>
 

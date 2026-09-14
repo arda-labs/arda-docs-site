@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { usePortalI18n } from './provider';
 import catalogData from '@/content/catalog-data.json';
+import portalStats from '@/content/portal-stats.json';
+import { PLATFORM_FACTS } from '@/lib/platform';
 
 interface SearchDialogProps {
   isOpen: boolean;
@@ -58,8 +60,8 @@ const DOC_PAGES: DocSearchItem[] = [
     id: 'doc-catalog',
     title: 'Danh mục Lỗi RFC 7807',
     title_en: 'RFC 7807 Problem Catalog',
-    description: 'Tra cứu toàn bộ 152 mã lỗi chuẩn hóa RFC 7807 với hướng dẫn sửa lỗi và code mẫu.',
-    description_en: 'Browse 152 RFC 7807 standardized error codes with remediation guides and code examples.',
+    description: `Tra cứu toàn bộ ${portalStats.totalProblems} mã lỗi chuẩn hóa RFC 7807 với hướng dẫn sửa lỗi và code mẫu.`,
+    description_en: `Browse ${portalStats.totalProblems} RFC 7807 standardized error codes with remediation guides and code examples.`,
     url: '/problems/auth.error.unauthorized/',
     badge: 'CATALOG',
     keywords: ['catalog', 'problems', 'errors', 'rfc7807', 'danh muc', 'loi', 'status', 'codes'],
@@ -80,8 +82,8 @@ const DOC_PAGES: DocSearchItem[] = [
     id: 'doc-architecture',
     title: 'Kiến trúc Core Banking (Architecture)',
     title_en: 'Core Banking Architecture',
-    description: 'Mô hình 11 Go microservices phân tán, bất biến sổ cái hai bên, Zeebe Sagas và chuẩn thời gian UTC.',
-    description_en: 'Distributed 11 Go microservices, double-entry immutable ledger, Zeebe Sagas, and UTC timing.',
+    description: `Mô hình ${PLATFORM_FACTS.services} Go microservices phân tán, bất biến sổ cái hai bên, Zeebe Sagas và chuẩn thời gian UTC.`,
+    description_en: `Distributed ${PLATFORM_FACTS.services} Go microservices, double-entry immutable ledger, Zeebe Sagas, and UTC timing.`,
     url: '/architecture',
     badge: 'ARCH',
     keywords: ['architecture', 'kien truc', 'microservices', 'ledger', 'so cai', 'saga', 'zeebe', 'grpc'],
@@ -543,8 +545,8 @@ export function SearchDialog({ isOpen, onClose }: SearchDialogProps) {
                     <span>
                       {query.trim() === '' && activeFilter === 'all'
                         ? isVi
-                          ? 'Mã Lỗi RFC 7807 (Toàn bộ 152 Specs)'
-                          : 'RFC 7807 Error Specs (All 152)'
+                          ? `Mã Lỗi RFC 7807 (Toàn bộ ${portalStats.totalProblems} Specs)`
+                          : `RFC 7807 Error Specs (All ${portalStats.totalProblems})`
                         : isVi
                         ? 'Mã Lỗi RFC 7807 Phù hợp'
                         : 'Matching Error Specs'}
