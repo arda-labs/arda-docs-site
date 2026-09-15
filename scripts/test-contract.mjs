@@ -156,6 +156,65 @@ async function runTests() {
   }
   console.log(`[PASS] Case C: Missing code query parameter correctly returned 400`);
 
+  // 4. Validate published OpenAPI documents under out/openapi/
+  console.log("\n=== Testing OpenAPI Publishing Contract ===");
+
+  const openApiDir = path.join(outDir, "openapi");
+  const manifest = JSON.parse(await readFile(path.join(openApiDir, "index.json"), "utf8"));
+
+  if (!Array.isArray(manifest.documents) || manifest.documents.length === 0) {
+    throw new Error("openapi/index.json: expected a non-empty documents array");
+  }
+
+  let verifiedSpecs = 0;
+  let verifiedOperations = 0;
+  for (const doc of manifest.documents) {
+    if (doc.url !== `/openapi/${doc.file}`) {
+      throw new Error(`OpenAPI manifest: ${doc.file} has unexpected url '${doc.url}'`);
+    }
+
+    const spec = JSON.parse(await readFile(path.join(openApiDir, doc.file), "utf8"));
+    if (spec.openapi !== "3.1.0") throw new Error(`${doc.file}: OpenAPI 3.1.0 is required`);
+    if (!spec.paths || Object.keys(spec.paths).length === 0) {
+      throw new Error(`${doc.file}: OpenAPI document has no paths`);
+    }
+    for (const required of ["ResponseMeta", "Problem"]) {
+      if (!spec.components?.schemas?.[required]) {
+        throw new Error(`${doc.file}: missing canonical schema ${required}`);
+      }
+    }
+
+    let counted = 0;
+    for (const [route, item] of Object.entries(spec.paths)) {
+      for (const [method, operation] of Object.entries(item)) {
+        if (!["get", "post", "put", "patch", "delete"].includes(method)) continue;
+        if (!operation.operationId) {
+          throw new Error(`${doc.file}: ${method.toUpperCase()} ${route} has no operationId`);
+        }
+        const hasSuccess = Object.keys(operation.responses ?? {}).some(
+          (status) => status[0] === "2" || status[0] === "3",
+        );
+        if (!hasSuccess) {
+          throw new Error(`${doc.file}: ${operation.operationId} has no 2xx/3xx success response`);
+        }
+        counted++;
+      }
+    }
+    if (counted !== doc.operationCount) {
+      throw new Error(`${doc.file}: manifest says ${doc.operationCount} operations, spec has ${counted}`);
+    }
+    verifiedSpecs++;
+    verifiedOperations += counted;
+  }
+  if (manifest.totals.documents !== verifiedSpecs || manifest.totals.operations !== verifiedOperations) {
+    throw new Error(
+      `OpenAPI manifest totals mismatch: ${JSON.stringify(manifest.totals)} vs ${verifiedSpecs}/${verifiedOperations}`,
+    );
+  }
+  console.log(
+    `[PASS] ${verifiedSpecs} OpenAPI documents (${verifiedOperations} operations) published with valid contracts`,
+  );
+
   console.log("\nALL CONTRACT VERIFICATION TESTS PASSED!");
 }
 

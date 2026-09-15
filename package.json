@@ -3,7 +3,7 @@
   "version": "0.0.26",
   "private": true,
   "scripts": {
-    "sync": "node scripts/sync-content.mjs",
+    "sync": "node scripts/sync-content.mjs && node scripts/sync-openapi.mjs",
     "dev": "bun run sync && next dev",
     "build": "bun run sync && next build && node scripts/emit-catalog.mjs",
     "test": "node scripts/test-contract.mjs",

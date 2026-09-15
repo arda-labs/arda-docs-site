@@ -29,4 +29,8 @@ next-env.d.ts
 /content/docs/problems/
 /content/catalog-data.json
 /content/portal-stats.json
+
+# generated OpenAPI publishing artifacts (source of truth is arda-be)
+/content/openapi-manifest.json
+/public/openapi/
 .wrangler

@@ -3,7 +3,9 @@
 import React from 'react';
 import {
   AlertTriangle,
+  Braces,
   Code2,
+  ExternalLink,
   KeyRound,
   Search,
   ShieldCheck,
@@ -32,6 +34,7 @@ import {
   pick,
 } from '@/lib/platform';
 import portalStats from '@/content/portal-stats.json';
+import openapiManifest from '@/content/openapi-manifest.json';
 
 const LOOKUP_FIELDS: Array<{ field: string; content: { en: string; vi: string } }> = [
   { field: 'code', content: { en: 'Canonical problem code, e.g. auth.error.unauthorized.', vi: 'Mã lỗi chuẩn, ví dụ auth.error.unauthorized.' } },
@@ -237,9 +240,59 @@ Content-Type: application/problem+json
         </Callout>
       </DocSection>
 
-      {/* 6. Lookup API */}
+      {/* 6. Published OpenAPI documents */}
       <DocSection
         index="6"
+        icon={Braces}
+        title={isVi ? 'Tài liệu OpenAPI Đã xuất bản' : 'Published OpenAPI Documents'}
+        description={
+          isVi
+            ? `${openapiManifest.totals.documents} tài liệu OpenAPI 3.1 (${openapiManifest.totals.operations} operation) được đồng bộ tự động từ arda-be/contracts/openapi khi build. Mỗi URL bên dưới là JSON thô, dùng trực tiếp cho Postman, IDE, codegen và agent.`
+            : `${openapiManifest.totals.documents} OpenAPI 3.1 documents (${openapiManifest.totals.operations} operations) synced automatically from arda-be/contracts/openapi at build time. Every URL below is raw JSON for Postman, IDEs, codegen, and agents.`
+        }
+      >
+        <DataTable
+          columns={['Document', 'Version', isVi ? 'Operation' : 'Operations', 'Service', isVi ? 'URL máy đọc' : 'Raw URL']}
+          minWidth={780}
+          rows={openapiManifest.documents.map((doc) => [
+            <span key="t" className="block">
+              <a
+                href={doc.url}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-primary hover:underline"
+              >
+                {doc.title}
+              </a>
+              <span className="block font-mono text-[11px] text-muted-foreground">{doc.file}</span>
+            </span>,
+            doc.version,
+            doc.operationCount,
+            <code key="s" className="font-mono text-[11px]">
+              {doc.service}
+            </code>,
+            <a
+              key="u"
+              href={doc.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 font-mono text-[11px] text-primary hover:underline break-all"
+            >
+              {doc.url}
+              <ExternalLink className="w-3 h-3 shrink-0" />
+            </a>,
+          ])}
+        />
+        <Callout tone="neutral" icon={Braces} title={isVi ? 'Nguồn & độ phủ' : 'Source & coverage'}>
+          {isVi
+            ? 'Spec là nguồn duy nhất ở arda-be/contracts/openapi; docs-site chỉ validate (cùng invariant với check-openapi.mjs) và sao chép khi build, không commit bản sao. Hiện mới có các pilot đã migrate (auth, iam, media); các service còn lại chưa có spec nên vẫn dùng policy.yaml làm tham chiếu route.'
+            : 'Specs are sourced only from arda-be/contracts/openapi; this site validates them (same invariants as check-openapi.mjs) and copies at build time without committing a duplicate. Only migrated pilots exist today (auth, iam, media); the remaining services have no spec yet, so policy.yaml remains the route reference.'}
+        </Callout>
+      </DocSection>
+
+      {/* 7. Lookup API */}
+      <DocSection
+        index="7"
         icon={Search}
         title={isVi ? 'API Tra cứu Máy đọc' : 'Machine Lookup API'}
         description={
@@ -266,9 +319,9 @@ Content-Type: application/problem+json
         />
       </DocSection>
 
-      {/* 7. Retry policies */}
+      {/* 8. Retry policies */}
       <DocSection
-        index="7"
+        index="8"
         icon={AlertTriangle}
         title={isVi ? 'Chính sách Thử lại theo Mã lỗi' : 'Per-Code Retry Policies'}
         description={

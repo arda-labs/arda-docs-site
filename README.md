@@ -6,6 +6,7 @@ Modern developer portal and machine lookup API for Arda RFC 7807 problem details
 
 - **Single Source of Truth**: All problem markdown files (`docs/problems/*.md`) reside in [`arda-be`](https://github.com/arda-labs/arda-be). Backend CI gates (`check-problem-catalog.mjs`) validate 100% catalog coverage against Go constants and handler call sites.
 - **Zero Dual-Write**: This repository (`arda-docs-site`) contains no committed problem content. During build, `scripts/sync-content.mjs` pulls specifications from `arda-be` and generates MDX pages.
+- **OpenAPI Publishing**: During build, `scripts/sync-openapi.mjs` validates `contracts/openapi/*.json` from `arda-be` (same invariants as `arda-be/scripts/check-openapi.mjs`) and publishes them as raw static assets at `/openapi/<name>.json`, plus `/openapi/index.json` (machine-readable manifest) and `content/openapi-manifest.json` for the API Gateway page. `scripts/test-contract.mjs` verifies every emitted spec.
 - **Modern Aesthetic**: Stripe/Shadcn-inspired layout with clean typography, dual client/operator remediation panels, dark/light theme, and real-time keyboard search (`/`).
 - **Edge Deployment**: Cloudflare Worker with `ASSETS` binding serving static HTML (`out/`) and programmatic JSON lookup (`/api/lookup`).
 
