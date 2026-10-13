@@ -1,9 +1,10 @@
 {
-  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "arda-docs-site",
   "main": "./docs-worker.ts",
   "compatibility_date": "2026-08-22",
-  "workers_dev": true,
+  "workers_dev": false,
+  "preview_urls": false,
   "routes": [
     { "pattern": "docs.arda.io.vn", "custom_domain": true }
   ],
