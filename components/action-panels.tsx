@@ -30,7 +30,7 @@ export function ActionPanels({ client, operator }: ActionPanelsProps) {
       {/* Client Remediation Panel */}
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col transition-all hover:border-primary/40">
         <div className="flex items-center gap-2.5 pb-3 mb-3 border-b border-border/60">
-          <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+          <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
             <Laptop className="w-4 h-4" />
           </div>
           <span className="font-semibold text-sm text-card-foreground">
@@ -45,7 +45,7 @@ export function ActionPanels({ client, operator }: ActionPanelsProps) {
       {/* Operator Diagnostics Panel */}
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm flex flex-col transition-all hover:border-emerald-500/40">
         <div className="flex items-center gap-2.5 pb-3 mb-3 border-b border-border/60">
-          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
             <Terminal className="w-4 h-4" />
           </div>
           <span className="font-semibold text-sm text-card-foreground">
