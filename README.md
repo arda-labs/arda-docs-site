@@ -41,6 +41,15 @@ bun run types:check
 
 ## Cloudflare Deployment
 
+Merging to `main` deploys: the `Verify Docs Site` workflow builds against an
+`arda-be` checkout (`ARDA_BE_PATH`) in the `verify` job, then a separate
+`deploy` job runs `wrangler deploy` on the built `out/` with the repo secret `CLOUDFLARE_API_TOKEN` and the repo variable `CLOUDFLARE_ACCOUNT_ID`. It
+can also be started by hand (Actions → Verify Docs Site → Run workflow).
+Cloudflare Workers Builds is not used: it clones only this repo, so the
+`sync` step cannot find the catalog.
+
+Manual deploy from a workstation with `arda-be` checked out next to this repo:
+
 ```bash
 bun run build
 bun run deploy
